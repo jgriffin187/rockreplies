@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rock Sales — Quick Reply</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --stone: #2a2520;
+    --gravel: #3d3630;
+    --pebble: #5c5248;
+    --sand: #c4b49a;
+    --cream: #f0e8d8;
+    --amber: #d4891a;
+    --amber-glow: #f0a830;
+    --moss: #5a7a4a;
+    --sky: #4a7a9a;
+    --radius: 6px;
+  }
+
+  body {
+    background: var(--stone);
+    color: var(--cream);
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 20% 0%, rgba(212,137,26,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 100%, rgba(90,122,74,0.08) 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='none'/%3E%3Ccircle cx='1' cy='1' r='0.5' fill='rgba(196,180,154,0.04)'/%3E%3C/svg%3E");
+  }
+
+  header {
+    padding: 16px 16px 10px;
+    border-bottom: 1px solid rgba(196,180,154,0.15);
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    background: rgba(0,0,0,0.2);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+  }
+
+  .logo-icon { font-size: 26px; line-height: 1; }
+
+  .header-text h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 19px;
+    font-weight: 900;
+    color: var(--amber-glow);
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+
+  .header-text p {
+    font-size: 10px;
+    color: var(--pebble);
+    margin-top: 2px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .settings-bar {
+    background: rgba(0,0,0,0.25);
+    border-bottom: 1px solid rgba(196,180,154,0.1);
+    padding: 10px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .setting-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 100px;
+  }
+
+  .setting-label {
+    font-size: 10px;
+    color: var(--pebble);
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
+
+  .setting-input {
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(196,180,154,0.18);
+    border-radius: 4px;
+    color: var(--amber-glow);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 5px 8px;
+    width: 100%;
+    min-width: 0;
+    text-align: center;
+  }
+
+  .setting-input:focus { outline: none; border-color: var(--amber); }
+
+  .settings-divider {
+    width: 1px;
+    height: 26px;
+    background: rgba(196,180,154,0.12);
+    flex-shrink: 0;
+  }
+
+  .tabs {
+    display: flex;
+    overflow-x: auto;
+    padding: 10px 16px 0;
+    gap: 6px;
+    scrollbar-width: none;
+    background: rgba(0,0,0,0.1);
+    border-bottom: 1px solid rgba(196,180,154,0.1);
+  }
+
+  .tabs::-webkit-scrollbar { display: none; }
+
+  .tab {
+    flex-shrink: 0;
+    padding: 7px 13px;
+    border-radius: 4px 4px 0 0;
+    border: 1px solid transparent;
+    border-bottom: none;
+    background: transparent;
+    color: var(--pebble);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.3px;
+    position: relative;
+    bottom: -1px;
+  }
+
+  .tab:hover { color: var(--sand); background: rgba(196,180,154,0.05); }
+
+  .tab.active {
+    background: var(--gravel);
+    color: var(--amber-glow);
+    border-color: rgba(196,180,154,0.15);
+    border-bottom-color: var(--gravel);
+  }
+
+  .main { padding: 16px; }
+
+  .category-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--pebble);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .category-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(196,180,154,0.1);
+  }
+
+  .cards { display: flex; flex-direction: column; gap: 10px; }
+
+  .card {
+    background: var(--gravel);
+    border: 1px solid rgba(196,180,154,0.1);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+
+  .card:hover { border-color: rgba(196,180,154,0.25); }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .card-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--sand);
+    letter-spacing: 0.2px;
+    flex: 1;
+  }
+
+  .card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  .btn {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-weight: 500;
+  }
+
+  .btn-copy { background: var(--amber); color: var(--stone); }
+  .btn-copy:hover { background: var(--amber-glow); transform: scale(1.02); }
+  .btn-copy.copied { background: var(--moss); color: white; }
+
+  .btn-edit { background: rgba(196,180,154,0.1); color: var(--sand); }
+  .btn-edit:hover { background: rgba(196,180,154,0.2); }
+
+  .card-body { padding: 0 12px 12px; display: none; }
+  .card-body.open { display: block; }
+
+  .card-text {
+    font-size: 12px;
+    line-height: 1.75;
+    color: var(--cream);
+    opacity: 0.85;
+    white-space: pre-wrap;
+    background: rgba(0,0,0,0.2);
+    padding: 10px;
+    border-radius: 4px;
+    border-left: 2px solid var(--amber);
+  }
+
+  .card-text[contenteditable="true"] {
+    outline: none;
+    border-left-color: var(--sky);
+    background: rgba(74,122,154,0.1);
+    opacity: 1;
+  }
+
+  .custom-compose {
+    background: var(--gravel);
+    border: 1px solid rgba(196,180,154,0.1);
+    border-radius: var(--radius);
+    padding: 14px;
+  }
+
+  .custom-compose h3 {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 10px;
+  }
+
+  .compose-input {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(196,180,154,0.15);
+    border-radius: 4px;
+    color: var(--cream);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    padding: 8px 10px;
+    width: 100%;
+    resize: vertical;
+  }
+
+  .compose-input:focus { outline: none; border-color: var(--amber); }
+  .compose-input::placeholder { color: var(--pebble); }
+
+  .compose-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .btn-sm { padding: 6px 12px; font-size: 11px; }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--moss);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 999;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-icon">🪨</div>
+  <div class="header-text">
+    <h1>Rock Sales</h1>
+    <p>Quick Reply Manager</p>
+  </div>
+</header>
+
+<div class="settings-bar">
+  <div class="setting-group">
+    <span class="setting-label">Rock $</span>
+    <input type="number" class="setting-input" id="priceInput" placeholder="50" oninput="updateTemplates()" />
+  </div>
+  <div class="setting-group">
+    <span class="setting-label">per</span>
+    <input type="text" class="setting-input" id="unitInput" placeholder="ton" style="max-width:70px;" oninput="updateTemplates()" />
+  </div>
+  <div class="settings-divider"></div>
+  <div class="setting-group">
+    <span class="setting-label">Delivery $</span>
+    <input type="number" class="setting-input" id="deliveryInput" placeholder="75" oninput="updateTemplates()" />
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('pricing', this)">💰 Pricing</button>
+  <button class="tab" onclick="switchTab('availability', this)">📦 Stock</button>
+  <button class="tab" onclick="switchTab('delivery', this)">🚚 Delivery</button>
+  <button class="tab" onclick="switchTab('negotiation', this)">🤝 Offers</button>
+  <button class="tab" onclick="switchTab('info', this)">ℹ️ Info</button>
+  <button class="tab" onclick="switchTab('compose', this)">✏️ Custom</button>
+</div>
+
+<div class="main">
+
+  <!-- PRICING -->
+  <div class="panel active" id="panel-pricing">
+    <div class="category-label">Pricing responses</div>
+    <div class="cards">
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Standard quote with delivery</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text" data-template="Hi! Thanks for your interest 😊 Rock is $[PRICE] per [UNIT], plus a $[DELIVERY] delivery fee. I bring it right to you — no hauling on your end! Just share your address and I'll confirm the total and get you on the schedule.">Hi! Thanks for your interest 😊 Rock is $[PRICE] per [UNIT], plus a $[DELIVERY] delivery fee. I bring it right to you — no hauling on your end! Just share your address and I'll confirm the total and get you on the schedule.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Need address to confirm delivery fee</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text" data-template="Rock is $[PRICE] per [UNIT] and delivery starts at $[DELIVERY], but the exact fee depends on your location. Can you share your address or general area so I can give you the exact total?">Rock is $[PRICE] per [UNIT] and delivery starts at $[DELIVERY], but the exact fee depends on your location. Can you share your address or general area so I can give you the exact total?</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Bulk order with delivery</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text" data-template="Rock is $[PRICE] per [UNIT] plus $[DELIVERY] delivery. If you're ordering a large quantity I may be able to work with you on the rock price — just let me know how much you're thinking and your address!">Rock is $[PRICE] per [UNIT] plus $[DELIVERY] delivery. If you're ordering a large quantity I may be able to work with you on the rock price — just let me know how much you're thinking and your address!</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Price is firm</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text" data-template="Thanks for asking! The rock is priced firm at $[PRICE] per [UNIT] — fair for the quality. Delivery to your area is $[DELIVERY]. Even with delivery, it's a solid deal compared to a landscape yard. Interested?">Thanks for asking! The rock is priced firm at $[PRICE] per [UNIT] — fair for the quality. Delivery to your area is $[DELIVERY]. Even with delivery, it's a solid deal compared to a landscape yard. Interested?</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- AVAILABILITY -->
+  <div class="panel" id="panel-availability">
+    <div class="category-label">Stock & availability</div>
+    <div class="cards">
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Yes, still available</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text">Yes, still available! Share your address and I'll confirm the delivery fee and get you on the schedule.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Sold out / gone</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text">Sorry, that batch is sold out! I get new loads in regularly — want me to message you when I have more available?</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Limited quantity left</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text">I don't have much of this one left — probably enough for one more order. If you want it, now's the time! Share your address and I can get you a full quote and delivery window.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Pending — may free up</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text">I have a delivery scheduled for today that may or may not go through. If it falls through, it's yours — want me to let you know either way?</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Notify when restocked</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text">I'll add you to my list and reach out as soon as the next load comes in! Appreciate your patience 🙏</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- DELIVERY -->
+  <div class="panel" id="panel-delivery">
+    <div class="category-label">Delivery info & scheduling</div>
+    <div class="cards">
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">How delivery works</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text" data-template="I deliver everything myself — no pickup required. I'll haul it right to your property and put it wherever you'd like it. Delivery fee is $[DELIVERY] (may vary by distance). Just share your address and we'll get it set up!">I deliver everything myself — no pickup required. I'll haul it right to your property and put it wherever you'd like it. Delivery fee is $[DELIVERY] (may vary by distance). Just share your address and we'll get it set up!</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Confirm delivery appointment</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text">Perfect, I've got you down for [DATE/TIME]. I'll give you a heads-up when I'm on my way. Cash or Venmo at delivery works great — see you then! 👍</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Delivery area question</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text">I deliver to most of the area — just share your address and I'll let you know if you're in my range and what the delivery fee would be!</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Outside delivery range</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text">Unfortunately that's a bit outside of my delivery area. I wish I could help! If anything changes or you know someone closer, feel free to reach out. Sorry about that!</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Delivery rescheduled</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text">Hey, just wanted to give you a heads up — I need to push your delivery to [NEW DATE/TIME]. Sorry for any inconvenience! Does that still work for you?</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">On my way!</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text">Heads up — I'm loaded up and headed your way! Should be there in about [X] minutes. Have cash or Venmo ready and let me know where you'd like the rock dropped. 🚚</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- NEGOTIATION -->
+  <div class="panel" id="panel-negotiation">
+    <div class="category-label">Offers & negotiation</div>
+    <div class="cards">
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Decline lowball — polite</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text">I appreciate the offer, but I need to stick with my asking price — it's already fair for the quality and includes delivery to your door. Let me know if you'd like to move forward!</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Decline discount on delivery fee</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text">The delivery fee covers my fuel, time, and equipment — it's set based on your distance and I can't really go lower on that. The rock price is the better place to talk if you're ordering a larger quantity!</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Counter offer</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text">Best I can do on the rock is $[PRICE] per [UNIT] — delivery stays as quoted. That's about as low as I can go. Want to make it happen?</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Accept offer</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text">Deal! Share your address if you haven't yet and we'll lock in a delivery time. Cash or Venmo when I arrive works great. 🤝</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- INFO -->
+  <div class="panel" id="panel-info">
+    <div class="category-label">Product info</div>
+    <div class="cards">
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">What kind of rock is this?</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text">It's [ROCK TYPE] — great for [USES: landscaping / drainage / driveways / garden borders]. Pieces range roughly [SIZE RANGE] in size. Happy to answer any other questions!</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">How much do I need?</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text">Good question! A rough rule of thumb: for a 2" layer of rock, one ton covers about 100 sq ft. What are you covering and how big is the space? I can help you estimate!</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Payment methods</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text">I accept cash and Venmo — payment due at delivery. No need to pay in advance!</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Where will you put it?</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text">I'll bring it right to your property. Just let me know where you'd like it dropped — driveway, backyard, side of house, wherever works best for you!</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Not interested — polite close</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="toggleEdit(this)">Edit</button>
+            <button class="btn btn-copy" onclick="copyCard(this)">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text">No worries at all! Feel free to reach out anytime if you need rock down the road — I usually have a variety and delivery makes it easy. Have a great day! 😊</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- COMPOSE -->
+  <div class="panel" id="panel-compose">
+    <div class="category-label">Custom message</div>
+    <div class="custom-compose">
+      <h3>✏️ Build a one-off reply</h3>
+      <textarea class="compose-input" id="composeArea" rows="6" placeholder="Type or paste a custom reply here..."></textarea>
+      <div class="compose-actions">
+        <button class="btn btn-copy btn-sm" onclick="copyCompose()">Copy Message</button>
+        <button class="btn btn-edit btn-sm" onclick="clearCompose()">Clear</button>
+      </div>
+    </div>
+
+    <div style="margin-top: 20px;">
+      <div class="category-label">Saved custom replies</div>
+      <div class="cards" id="custom-saved">
+        <div style="font-size: 11px; color: var(--pebble); text-align: center; padding: 20px;">
+          Write a message above, then tap Save to keep it here.
+        </div>
+      </div>
+      <button class="btn btn-edit" style="width:100%; margin-top:12px; font-size:11px; padding:10px;" onclick="saveCompose()">+ Save Current Message</button>
+    </div>
+  </div>
+
+</div><!-- end main -->
+
+<div class="toast" id="toast">Copied!</div>
+
+<script>
+  function switchTab(id, el) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+    el.classList.add('active');
+  }
+
+  function getVals() {
+    return {
+      price: document.getElementById('priceInput').value || '[PRICE]',
+      unit:  document.getElementById('unitInput').value  || '[UNIT]',
+      delivery: document.getElementById('deliveryInput').value || '[DELIVERY]'
+    };
+  }
+
+  function updateTemplates() {
+    const { price, unit, delivery } = getVals();
+    document.querySelectorAll('.card-text[data-template]').forEach(el => {
+      if (el.contentEditable === 'true') return;
+      let t = el.getAttribute('data-template');
+      t = t.replace(/\[PRICE\]/g, price);
+      t = t.replace(/\[UNIT\]/g, unit);
+      t = t.replace(/\[DELIVERY\]/g, delivery);
+      el.innerText = t;
+    });
+  }
+
+  function copyCard(btn) {
+    const text = btn.closest('.card').querySelector('.card-text').innerText.trim();
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓ Done';
+      btn.classList.add('copied');
+      showToast('Copied to clipboard!');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+    });
+  }
+
+  function toggleEdit(btn) {
+    const cardText = btn.closest('.card').querySelector('.card-text');
+    const body     = btn.closest('.card').querySelector('.card-body');
+    body.classList.add('open');
+    const editing = cardText.contentEditable === 'true';
+    if (!editing) {
+      cardText.contentEditable = 'true';
+      cardText.focus();
+      btn.textContent = 'Done';
+      btn.style.color = 'var(--sky)';
+    } else {
+      cardText.contentEditable = 'false';
+      btn.textContent = 'Edit';
+      btn.style.color = '';
+      showToast('Saved ✓');
+    }
+  }
+
+  function copyCompose() {
+    const text = document.getElementById('composeArea').value.trim();
+    if (!text) { showToast('Nothing to copy!'); return; }
+    navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard!'));
+  }
+
+  function clearCompose() {
+    document.getElementById('composeArea').value = '';
+  }
+
+  let savedCustom = [];
+
+  function saveCompose() {
+    const text = document.getElementById('composeArea').value.trim();
+    if (!text) { showToast('Write something first!'); return; }
+    savedCustom.push(text);
+    renderSaved();
+    showToast('Saved!');
+  }
+
+  function renderSaved() {
+    const container = document.getElementById('custom-saved');
+    if (!savedCustom.length) {
+      container.innerHTML = '<div style="font-size:11px;color:var(--pebble);text-align:center;padding:20px;">No saved messages yet.</div>';
+      return;
+    }
+    container.innerHTML = savedCustom.map((msg, i) => `
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Custom reply ${i + 1}</span>
+          <div class="card-actions">
+            <button class="btn btn-edit" onclick="deleteCustom(${i})">Del</button>
+            <button class="btn btn-copy" onclick="copyRaw(this, ${i})">Copy</button>
+          </div>
+        </div>
+        <div class="card-body open">
+          <div class="card-text">${msg.replace(/</g,'&lt;')}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function deleteCustom(i) { savedCustom.splice(i, 1); renderSaved(); }
+
+  function copyRaw(btn, i) {
+    navigator.clipboard.writeText(savedCustom[i]).then(() => {
+      btn.textContent = '✓ Done';
+      btn.classList.add('copied');
+      showToast('Copied!');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+    });
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+</script>
+</body>
+</html>
