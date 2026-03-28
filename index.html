@@ -3,71 +3,87 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rock Sales — Quick Reply</title>
+<title>Griffin Hauling Sales Tools</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@700;800&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --stone: #2a2520;
-    --gravel: #3d3630;
-    --pebble: #5c5248;
-    --sand: #c4b49a;
-    --cream: #f0e8d8;
-    --amber: #d4891a;
-    --amber-glow: #f0a830;
-    --moss: #5a7a4a;
-    --sky: #4a7a9a;
-    --radius: 6px;
+    --bg:        #0d1520;
+    --surface:   #152035;
+    --surface2:  #1c2d45;
+    --border:    rgba(255,255,255,0.08);
+    --border-hi: rgba(255,255,255,0.15);
+    --text:      #e8edf5;
+    --muted:     #6b7f99;
+    --subtle:    #3a5070;
+    --orange:    #f5821f;
+    --orange-hi: #ff9a3c;
+    --orange-dk: #c9670f;
+    --blue-acc:  #3b82f6;
+    --green:     #22c55e;
+    --radius:    10px;
+    --radius-sm: 6px;
   }
 
   body {
-    background: var(--stone);
-    color: var(--cream);
-    font-family: 'IBM Plex Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
     min-height: 100vh;
     background-image:
-      radial-gradient(ellipse at 20% 0%, rgba(212,137,26,0.08) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 100%, rgba(90,122,74,0.08) 0%, transparent 50%),
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='none'/%3E%3Ccircle cx='1' cy='1' r='0.5' fill='rgba(196,180,154,0.04)'/%3E%3C/svg%3E");
+      radial-gradient(ellipse at 0% 0%, rgba(59,130,246,0.07) 0%, transparent 55%),
+      radial-gradient(ellipse at 100% 100%, rgba(245,130,31,0.06) 0%, transparent 55%);
   }
 
+  /* ── Header ── */
   header {
-    padding: 16px 16px 10px;
-    border-bottom: 1px solid rgba(196,180,154,0.15);
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--border);
     display: flex;
-    align-items: flex-end;
-    gap: 12px;
-    background: rgba(0,0,0,0.2);
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
     position: sticky;
     top: 0;
     z-index: 100;
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(12px);
   }
 
-  .logo-icon { font-size: 26px; line-height: 1; }
+  .logo-icon {
+    width: 34px; height: 34px;
+    background: linear-gradient(135deg, var(--orange), var(--orange-dk));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(245,130,31,0.35);
+  }
 
   .header-text h1 {
-    font-family: 'Playfair Display', serif;
-    font-size: 19px;
-    font-weight: 900;
-    color: var(--amber-glow);
-    letter-spacing: -0.5px;
+    font-family: 'Sora', sans-serif;
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.4px;
     line-height: 1;
   }
 
   .header-text p {
     font-size: 10px;
-    color: var(--pebble);
+    color: var(--muted);
     margin-top: 2px;
-    letter-spacing: 1px;
+    letter-spacing: 0.8px;
     text-transform: uppercase;
+    font-weight: 500;
   }
 
+  /* ── Settings bar ── */
   .settings-bar {
-    background: rgba(0,0,0,0.25);
-    border-bottom: 1px solid rgba(196,180,154,0.1);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
     padding: 10px 16px;
     display: flex;
     flex-wrap: wrap;
@@ -80,222 +96,429 @@
     align-items: center;
     gap: 6px;
     flex: 1;
-    min-width: 100px;
+    min-width: 90px;
   }
 
   .setting-label {
-    font-size: 10px;
-    color: var(--pebble);
-    letter-spacing: 0.5px;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.3px;
     white-space: nowrap;
-    text-transform: uppercase;
+    font-weight: 500;
   }
 
   .setting-input {
-    background: rgba(0,0,0,0.35);
-    border: 1px solid rgba(196,180,154,0.18);
-    border-radius: 4px;
-    color: var(--amber-glow);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    font-weight: 500;
-    padding: 5px 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--orange-hi);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 6px 8px;
     width: 100%;
     min-width: 0;
     text-align: center;
+    transition: border-color 0.15s;
   }
-
-  .setting-input:focus { outline: none; border-color: var(--amber); }
+  .setting-input:focus { outline: none; border-color: var(--orange); }
 
   .settings-divider {
-    width: 1px;
-    height: 26px;
-    background: rgba(196,180,154,0.12);
+    width: 1px; height: 28px;
+    background: var(--border);
     flex-shrink: 0;
   }
 
+  /* ── Tabs ── */
   .tabs {
     display: flex;
     overflow-x: auto;
-    padding: 10px 16px 0;
-    gap: 6px;
+    padding: 0 12px;
+    gap: 2px;
     scrollbar-width: none;
-    background: rgba(0,0,0,0.1);
-    border-bottom: 1px solid rgba(196,180,154,0.1);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
   }
-
   .tabs::-webkit-scrollbar { display: none; }
 
   .tab {
     flex-shrink: 0;
-    padding: 7px 13px;
-    border-radius: 4px 4px 0 0;
-    border: 1px solid transparent;
-    border-bottom: none;
+    padding: 12px 13px;
+    border: none;
+    border-bottom: 2px solid transparent;
     background: transparent;
-    color: var(--pebble);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
+    color: var(--muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
-    letter-spacing: 0.3px;
-    position: relative;
-    bottom: -1px;
+    white-space: nowrap;
   }
-
-  .tab:hover { color: var(--sand); background: rgba(196,180,154,0.05); }
-
+  .tab:hover { color: var(--text); }
   .tab.active {
-    background: var(--gravel);
-    color: var(--amber-glow);
-    border-color: rgba(196,180,154,0.15);
-    border-bottom-color: var(--gravel);
+    color: var(--orange);
+    border-bottom-color: var(--orange);
+    font-weight: 600;
   }
 
+  /* ── Main content ── */
   .main { padding: 16px; }
 
   .category-label {
     font-size: 10px;
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
-    color: var(--pebble);
+    color: var(--muted);
+    font-weight: 600;
     margin-bottom: 12px;
     display: flex;
     align-items: center;
     gap: 8px;
   }
-
   .category-label::after {
     content: '';
     flex: 1;
     height: 1px;
-    background: rgba(196,180,154,0.1);
+    background: var(--border);
   }
 
-  .cards { display: flex; flex-direction: column; gap: 10px; }
+  /* ── Cards ── */
+  .cards { display: flex; flex-direction: column; gap: 8px; }
 
   .card {
-    background: var(--gravel);
-    border: 1px solid rgba(196,180,154,0.1);
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: var(--radius);
     overflow: hidden;
-    transition: border-color 0.15s;
+    transition: border-color 0.15s, box-shadow 0.15s;
   }
-
-  .card:hover { border-color: rgba(196,180,154,0.25); }
+  .card:hover {
+    border-color: var(--border-hi);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+  }
 
   .card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 12px;
+    padding: 11px 14px;
     gap: 10px;
   }
 
   .card-title {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--sand);
-    letter-spacing: 0.2px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
     flex: 1;
   }
 
   .card-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
   .btn {
-    padding: 5px 10px;
+    padding: 5px 12px;
     border: none;
-    border-radius: 4px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
+    border-radius: var(--radius-sm);
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.15s;
-    font-weight: 500;
   }
 
-  .btn-copy { background: var(--amber); color: var(--stone); }
-  .btn-copy:hover { background: var(--amber-glow); transform: scale(1.02); }
-  .btn-copy.copied { background: var(--moss); color: white; }
+  .btn-copy {
+    background: var(--orange);
+    color: white;
+  }
+  .btn-copy:hover { background: var(--orange-hi); transform: scale(1.02); }
+  .btn-copy.copied { background: var(--green); }
 
-  .btn-edit { background: rgba(196,180,154,0.1); color: var(--sand); }
-  .btn-edit:hover { background: rgba(196,180,154,0.2); }
+  .btn-edit {
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-edit:hover { background: var(--subtle); color: var(--text); }
 
-  .card-body { padding: 0 12px 12px; display: none; }
+  .card-body { padding: 0 14px 14px; display: none; }
   .card-body.open { display: block; }
 
   .card-text {
-    font-size: 12px;
-    line-height: 1.75;
-    color: var(--cream);
-    opacity: 0.85;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #b0bfd4;
     white-space: pre-wrap;
-    background: rgba(0,0,0,0.2);
-    padding: 10px;
-    border-radius: 4px;
-    border-left: 2px solid var(--amber);
+    background: var(--surface2);
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--orange);
   }
-
   .card-text[contenteditable="true"] {
     outline: none;
-    border-left-color: var(--sky);
-    background: rgba(74,122,154,0.1);
-    opacity: 1;
+    border-left-color: var(--blue-acc);
+    background: rgba(59,130,246,0.07);
+    color: var(--text);
   }
 
+  /* ── Custom compose ── */
   .custom-compose {
-    background: var(--gravel);
-    border: 1px solid rgba(196,180,154,0.1);
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 14px;
+    padding: 16px;
   }
-
   .custom-compose h3 {
     font-size: 11px;
-    letter-spacing: 1.5px;
+    font-weight: 700;
+    letter-spacing: 1px;
     text-transform: uppercase;
-    color: var(--amber);
+    color: var(--orange);
     margin-bottom: 10px;
   }
 
   .compose-input {
-    background: rgba(0,0,0,0.3);
-    border: 1px solid rgba(196,180,154,0.15);
-    border-radius: 4px;
-    color: var(--cream);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    padding: 8px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    padding: 10px 12px;
     width: 100%;
     resize: vertical;
+    line-height: 1.6;
+    transition: border-color 0.15s;
   }
+  .compose-input:focus { outline: none; border-color: var(--orange); }
+  .compose-input::placeholder { color: var(--subtle); }
 
-  .compose-input:focus { outline: none; border-color: var(--amber); }
-  .compose-input::placeholder { color: var(--pebble); }
+  .compose-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .btn-sm { padding: 7px 14px; font-size: 12px; }
 
-  .compose-actions { display: flex; gap: 8px; margin-top: 8px; }
-  .btn-sm { padding: 6px 12px; font-size: 11px; }
-
+  /* ── Toast ── */
   .toast {
     position: fixed;
     bottom: 24px;
     left: 50%;
     transform: translateX(-50%) translateY(80px);
-    background: var(--moss);
-    color: white;
+    background: #1a3a5c;
+    color: var(--text);
+    border: 1px solid var(--border-hi);
     padding: 10px 20px;
     border-radius: 20px;
-    font-size: 12px;
-    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     z-index: 999;
     white-space: nowrap;
     pointer-events: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
   }
-
   .toast.show { transform: translateX(-50%) translateY(0); }
 
   .panel { display: none; }
   .panel.active { display: block; }
+
+  /* ── Estimator ── */
+  .est-section { margin-bottom: 18px; }
+
+  .est-label {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .est-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  .shape-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .shape-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 10px 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    line-height: 1.3;
+  }
+  .shape-btn:hover { border-color: var(--border-hi); color: var(--text); }
+  .shape-btn.active {
+    background: rgba(245,130,31,0.15);
+    color: var(--orange-hi);
+    border-color: var(--orange);
+    font-weight: 600;
+  }
+
+  .shape-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+
+  .shape-diagram {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin: 12px 0;
+    min-height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .shape-diagram svg { max-width: 100%; }
+
+  .dim-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+  }
+
+  .dim-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    width: 70px;
+    flex-shrink: 0;
+  }
+
+  .dim-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 12px;
+    flex: 1;
+    min-width: 0;
+    transition: border-color 0.15s;
+  }
+  .dim-input:focus { outline: none; border-color: var(--orange); }
+
+  .dim-unit {
+    font-size: 12px;
+    color: var(--muted);
+    width: 24px;
+    flex-shrink: 0;
+    font-weight: 500;
+  }
+
+  .material-select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 9px 36px 9px 12px;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .material-select:focus { outline: none; border-color: var(--orange); }
+  .material-select option { background: #152035; }
+
+  .select-wrap { position: relative; }
+  .select-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+    font-size: 13px;
+  }
+
+  .btn-calculate {
+    width: 100%;
+    padding: 13px;
+    background: var(--orange);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.3px;
+    margin-top: 4px;
+    box-shadow: 0 2px 12px rgba(245,130,31,0.3);
+  }
+  .btn-calculate:hover { background: var(--orange-hi); box-shadow: 0 4px 16px rgba(245,130,31,0.4); }
+  .btn-calculate:active { transform: scale(0.98); }
+
+  .result-box {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--orange);
+    border-radius: var(--radius);
+    padding: 20px 16px 16px;
+    margin-top: 14px;
+    text-align: center;
+  }
+  .result-box.show { display: block; }
+
+  .result-tons {
+    font-family: 'Sora', sans-serif;
+    font-size: 42px;
+    font-weight: 800;
+    color: var(--orange-hi);
+    line-height: 1;
+    letter-spacing: -1px;
+  }
+
+  .result-unit {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+    margin-bottom: 14px;
+    font-weight: 500;
+  }
+
+  .result-meta {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.8;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    text-align: left;
+  }
+  .result-meta strong { color: var(--text); font-weight: 600; }
+
+  .result-copy-row {
+    margin-top: 14px;
+    display: flex;
+    gap: 8px;
+  }
+
+  .error-msg {
+    color: #f87171;
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 8px;
+    display: none;
+    padding: 8px 12px;
+    background: rgba(248,113,113,0.1);
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(248,113,113,0.2);
+  }
+  .error-msg.show { display: block; }
 </style>
 </head>
 <body>
@@ -303,15 +526,15 @@
 <header>
   <div class="logo-icon">🪨</div>
   <div class="header-text">
-    <h1>Rock Sales</h1>
-    <p>Quick Reply Manager</p>
+    <h1>Griffin Hauling</h1>
+    <p>Sales Tools</p>
   </div>
 </header>
 
 <div class="settings-bar">
   <div class="setting-group">
     <span class="setting-label">Rock $</span>
-    <input type="number" class="setting-input" id="priceInput" placeholder="50" oninput="updateTemplates()" />
+    <input type="number" class="setting-input" id="priceInput" placeholder="100" oninput="updateTemplates()" />
   </div>
   <div class="setting-group">
     <span class="setting-label">per</span>
@@ -320,7 +543,7 @@
   <div class="settings-divider"></div>
   <div class="setting-group">
     <span class="setting-label">Delivery $</span>
-    <input type="number" class="setting-input" id="deliveryInput" placeholder="75" oninput="updateTemplates()" />
+    <input type="number" class="setting-input" id="deliveryInput" placeholder="100" oninput="updateTemplates()" />
   </div>
 </div>
 
@@ -331,6 +554,7 @@
   <button class="tab" onclick="switchTab('negotiation', this)">🤝 Offers</button>
   <button class="tab" onclick="switchTab('info', this)">ℹ️ Info</button>
   <button class="tab" onclick="switchTab('compose', this)">✏️ Custom</button>
+  <button class="tab" onclick="switchTab('estimator', this)">📐 Estimator</button>
 </div>
 
 <div class="main">
@@ -710,6 +934,88 @@
     </div>
   </div>
 
+  <!-- ESTIMATOR -->
+  <div class="panel" id="panel-estimator">
+    <div class="category-label">Materials estimator</div>
+
+    <!-- Shape picker -->
+    <div class="est-section">
+      <div class="est-label">Area shape</div>
+      <div class="shape-grid">
+        <button class="shape-btn active" onclick="selectShape('square',this)">
+          <span class="shape-icon">⬛</span>Square
+        </button>
+        <button class="shape-btn" onclick="selectShape('rectangle',this)">
+          <span class="shape-icon">▬</span>Rectangle
+        </button>
+        <button class="shape-btn" onclick="selectShape('circle',this)">
+          <span class="shape-icon">⬤</span>Circle
+        </button>
+        <button class="shape-btn" onclick="selectShape('triangle',this)">
+          <span class="shape-icon">▲</span>Triangle
+        </button>
+        <button class="shape-btn" onclick="selectShape('oval',this)">
+          <span class="shape-icon">⬭</span>Oval
+        </button>
+        <button class="shape-btn" onclick="selectShape('trapezoid',this)">
+          <span class="shape-icon">⏢</span>Trapezoid
+        </button>
+      </div>
+    </div>
+
+    <!-- Diagram -->
+    <div class="shape-diagram" id="shapeDiagram">
+      <!-- filled by JS -->
+    </div>
+
+    <!-- Dimension inputs -->
+    <div class="est-section" id="dimInputs">
+      <!-- filled by JS -->
+    </div>
+
+    <!-- Depth -->
+    <div class="est-section">
+      <div class="est-label">Depth</div>
+      <div class="dim-row">
+        <span class="dim-label">Depth</span>
+        <input type="number" class="dim-input" id="depthInput" placeholder="2" min="0.25" step="0.25" />
+        <span class="dim-unit">in</span>
+      </div>
+    </div>
+
+    <!-- Material -->
+    <div class="est-section">
+      <div class="est-label">Material</div>
+      <div class="select-wrap">
+        <select class="material-select" id="materialSelect">
+          <option value="1.35" selected>River Rock / Cobble / Beach Pebbles</option>
+          <option value="1.4">3/4 in. Crushed Rock / Gravel</option>
+          <option value="1.35">Pea Gravel</option>
+          <option value="1.1">Crusher Fines / Decomposed Granite</option>
+          <option value="0.75">Topsoil (dry)</option>
+          <option value="0.55">Compost / Mulch</option>
+          <option value="1.5">Sand</option>
+          <option value="1.45">Limestone / Lava Rock</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn-calculate" onclick="calculate()">Calculate</button>
+    <div class="error-msg" id="estError">Please fill in all dimensions.</div>
+
+    <!-- Result -->
+    <div class="result-box" id="resultBox">
+      <div class="result-tons" id="resultTons">—</div>
+      <div class="result-unit">tons required</div>
+      <div class="result-meta" id="resultMeta"></div>
+      <div class="result-copy-row">
+        <button class="btn btn-copy" style="flex:1;" onclick="copyEstimate()">Copy as Message</button>
+        <button class="btn btn-edit" style="flex:1;" onclick="resetEstimator()">Reset</button>
+      </div>
+    </div>
+
+  </div>
+
 </div><!-- end main -->
 
 <div class="toast" id="toast">Copied!</div>
@@ -761,7 +1067,7 @@
       cardText.contentEditable = 'true';
       cardText.focus();
       btn.textContent = 'Done';
-      btn.style.color = 'var(--sky)';
+      btn.style.color = 'var(--blue-acc)';
     } else {
       cardText.contentEditable = 'false';
       btn.textContent = 'Edit';
@@ -793,7 +1099,7 @@
   function renderSaved() {
     const container = document.getElementById('custom-saved');
     if (!savedCustom.length) {
-      container.innerHTML = '<div style="font-size:11px;color:var(--pebble);text-align:center;padding:20px;">No saved messages yet.</div>';
+      container.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px;">No saved messages yet.</div>';
       return;
     }
     container.innerHTML = savedCustom.map((msg, i) => `
@@ -829,6 +1135,165 @@
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2000);
   }
+
+  // ── ESTIMATOR ──────────────────────────────────────────
+  const SHAPES = {
+    square: {
+      label: 'Square',
+      dims: [{ id: 'side1', label: 'Side' }],
+      svg: `<svg viewBox="0 0 120 80" width="120" height="80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="10" width="80" height="60" stroke="#f5821f" stroke-width="2"/>
+        <line x1="20" y1="76" x2="100" y2="76" stroke="#6b7f99" stroke-width="1.5" marker-start="url(#arr)" marker-end="url(#arr2)"/>
+        <text x="60" y="74" text-anchor="middle" fill="#6b7f99" font-size="9" font-family="sans-serif" dy="-2">Side</text>
+        <defs><marker id="arr" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto"><path d="M4,0 L0,2 L4,4" stroke="#6b7f99" stroke-width="1" fill="none"/></marker>
+        <marker id="arr2" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto-start-reverse"><path d="M4,0 L0,2 L4,4" stroke="#6b7f99" stroke-width="1" fill="none"/></marker></defs>
+      </svg>`,
+      area: (d) => d.side1 * d.side1
+    },
+    rectangle: {
+      label: 'Rectangle',
+      dims: [{ id: 'length', label: 'Length' }, { id: 'width', label: 'Width' }],
+      svg: `<svg viewBox="0 0 140 90" width="140" height="90" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="15" y="10" width="110" height="60" stroke="#f5821f" stroke-width="2"/>
+        <text x="70" y="86" text-anchor="middle" fill="#6b7f99" font-size="9" font-family="monospace">Length</text>
+        <text x="8" y="42" text-anchor="middle" fill="#6b7f99" font-size="9" font-family="monospace" transform="rotate(-90,8,42)">Width</text>
+      </svg>`,
+      area: (d) => d.length * d.width
+    },
+    circle: {
+      label: 'Circle',
+      dims: [{ id: 'radius', label: 'Radius' }],
+      svg: `<svg viewBox="0 0 100 90" width="100" height="90" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="44" r="36" stroke="#f5821f" stroke-width="2"/>
+        <line x1="50" y1="44" x2="86" y2="44" stroke="#6b7f99" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <text x="68" y="40" text-anchor="middle" fill="#6b7f99" font-size="9" font-family="monospace">radius</text>
+      </svg>`,
+      area: (d) => Math.PI * d.radius * d.radius
+    },
+    triangle: {
+      label: 'Triangle',
+      dims: [{ id: 'base', label: 'Base' }, { id: 'height', label: 'Height' }],
+      svg: `<svg viewBox="0 0 130 90" width="130" height="90" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="65,8 10,78 120,78" stroke="#f5821f" stroke-width="2"/>
+        <line x1="65" y1="8" x2="65" y2="78" stroke="#6b7f99" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <text x="72" y="50" fill="#6b7f99" font-size="9" font-family="monospace">h</text>
+        <text x="65" y="88" text-anchor="middle" fill="#6b7f99" font-size="9" font-family="monospace">Base</text>
+      </svg>`,
+      area: (d) => 0.5 * d.base * d.height
+    },
+    oval: {
+      label: 'Oval',
+      dims: [{ id: 'length', label: 'Length' }, { id: 'width', label: 'Width' }],
+      svg: `<svg viewBox="0 0 140 90" width="140" height="90" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="70" cy="44" rx="60" ry="32" stroke="#f5821f" stroke-width="2"/>
+        <text x="70" y="86" text-anchor="middle" fill="#6b7f99" font-size="9" font-family="monospace">Length</text>
+        <text x="8" y="46" text-anchor="middle" fill="#6b7f99" font-size="9" font-family="monospace" transform="rotate(-90,8,46)">Width</text>
+      </svg>`,
+      area: (d) => Math.PI * (d.length / 2) * (d.width / 2)
+    },
+    trapezoid: {
+      label: 'Trapezoid',
+      dims: [{ id: 'base1', label: 'Base 1' }, { id: 'base2', label: 'Base 2' }, { id: 'height', label: 'Height' }],
+      svg: `<svg viewBox="0 0 140 90" width="140" height="90" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="25,75 115,75 100,15 40,15" stroke="#f5821f" stroke-width="2"/>
+        <text x="70" y="88" text-anchor="middle" fill="#6b7f99" font-size="9" font-family="monospace">Base 1</text>
+        <text x="70" y="12" text-anchor="middle" fill="#6b7f99" font-size="9" font-family="monospace">Base 2</text>
+        <line x1="25" y1="75" x2="25" y2="15" stroke="#6b7f99" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <text x="16" y="48" fill="#6b7f99" font-size="9" font-family="monospace">h</text>
+      </svg>`,
+      area: (d) => 0.5 * (d.base1 + d.base2) * d.height
+    }
+  };
+
+  let currentShape = 'square';
+
+  function selectShape(key, btn) {
+    currentShape = key;
+    document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderShapeUI();
+    hideResult();
+  }
+
+  function renderShapeUI() {
+    const shape = SHAPES[currentShape];
+    // diagram
+    document.getElementById('shapeDiagram').innerHTML = shape.svg;
+    // dim inputs
+    const container = document.getElementById('dimInputs');
+    container.innerHTML = `<div class="est-label">Dimensions (feet)</div>` +
+      shape.dims.map(d => `
+        <div class="dim-row">
+          <span class="dim-label">${d.label}</span>
+          <input type="number" class="dim-input" id="dim_${d.id}" placeholder="0" min="0" step="0.5" />
+          <span class="dim-unit">ft</span>
+        </div>
+      `).join('');
+  }
+
+  function calculate() {
+    const shape = SHAPES[currentShape];
+    const dimVals = {};
+    for (const d of shape.dims) {
+      const val = parseFloat(document.getElementById('dim_' + d.id).value);
+      if (!val || val <= 0) {
+        showError('Please fill in all dimensions with values greater than 0.');
+        return;
+      }
+      dimVals[d.id] = val;
+    }
+    const depth = parseFloat(document.getElementById('depthInput').value);
+    if (!depth || depth <= 0) {
+      showError('Please enter a depth greater than 0.');
+      return;
+    }
+    const densityTonsPerCuFt = parseFloat(document.getElementById('materialSelect').value);
+    const materialName = document.getElementById('materialSelect').selectedOptions[0].text;
+
+    hideError();
+
+    const sqFt = shape.area(dimVals);
+    const depthFt = depth / 12;
+    const cuFt = sqFt * depthFt;
+    const cuYd = cuFt / 27;
+    // density values are in tons per cubic yard
+    const tons = cuYd * densityTonsPerCuFt;
+
+    document.getElementById('resultTons').textContent = tons.toFixed(2);
+    document.getElementById('resultMeta').innerHTML =
+      `Area: <strong>${sqFt.toFixed(1)} sq ft</strong> (${cuYd.toFixed(2)} cu yd)<br>` +
+      `Depth: <strong>${depth} in</strong><br>` +
+      `Material: <strong>${materialName}</strong>`;
+
+    document.getElementById('resultBox').classList.add('show');
+    // store for copy
+    window._lastEstimate = { tons: tons.toFixed(2), sqFt: sqFt.toFixed(1), depth, materialName };
+  }
+
+  function copyEstimate() {
+    if (!window._lastEstimate) return;
+    const { tons, sqFt, depth, materialName } = window._lastEstimate;
+    const msg = `Here's a rough estimate for your project: covering ${sqFt} sq ft at ${depth}" deep with ${materialName} would require approximately ${tons} tons. Let me know if you'd like to adjust the quantity or set up a delivery!`;
+    navigator.clipboard.writeText(msg).then(() => showToast('Estimate copied as message!'));
+  }
+
+  function resetEstimator() {
+    document.querySelectorAll('.dim-input').forEach(i => i.value = '');
+    document.getElementById('depthInput').value = '';
+    hideResult();
+    hideError();
+  }
+
+  function hideResult() { document.getElementById('resultBox').classList.remove('show'); }
+  function showError(msg) {
+    const el = document.getElementById('estError');
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+  function hideError() { document.getElementById('estError').classList.remove('show'); }
+
+  // Init estimator on load
+  renderShapeUI();
 </script>
 </body>
 </html>
