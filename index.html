@@ -920,7 +920,7 @@
       <div class="est-label">Depth</div>
       <div class="dim-row">
         <span class="dim-label">Depth</span>
-        <input type="number" class="dim-input" id="depthInput" placeholder="2" min="0.25" step="0.25" />
+        <input type="number" class="dim-input" id="depthInput" value="3" min="0.25" step="0.25" />
         <span class="dim-unit">in</span>
       </div>
     </div>
@@ -1184,11 +1184,7 @@
       }
       dimVals[d.id] = val;
     }
-    const depth = parseFloat(document.getElementById('depthInput').value);
-    if (!depth || depth <= 0) {
-      showError('Please enter a depth greater than 0.');
-      return;
-    }
+    const depth = parseFloat(document.getElementById('depthInput').value) || 3;
     const densityTonsPerCuFt = parseFloat(document.getElementById('materialSelect').value);
     const materialName = document.getElementById('materialSelect').selectedOptions[0].text;
 
@@ -1239,60 +1235,11 @@
   updateTemplates();
 
   // ── PWA: Inline Service Worker for Offline Support ──────
+  // ── PWA: Service Worker for Offline Support ──────
   if ('serviceWorker' in navigator) {
-    const swCode = `
-      const CACHE = 'griffin-hauling-v1';
-      const FONTS = [
-        'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@700;800&display=swap'
-      ];
-
-      self.addEventListener('install', e => {
-        e.waitUntil(
-          caches.open(CACHE).then(cache => {
-            // Cache the page itself
-            return cache.add(self.location.href.replace(/\\/sw-blob.js.*/, ''));
-          }).catch(() => {})
-        );
-        self.skipWaiting();
-      });
-
-      self.addEventListener('activate', e => {
-        e.waitUntil(
-          caches.keys().then(keys =>
-            Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-          )
-        );
-        self.clients.claim();
-      });
-
-      self.addEventListener('fetch', e => {
-        e.respondWith(
-          caches.match(e.request).then(cached => {
-            if (cached) return cached;
-            return fetch(e.request).then(response => {
-              if (!response || response.status !== 200) return response;
-              const clone = response.clone();
-              caches.open(CACHE).then(cache => cache.put(e.request, clone));
-              return response;
-            }).catch(() => cached || new Response('Offline', { status: 503 }));
-          })
-        );
-      });
-    `;
-
-    const blob = new Blob([swCode], { type: 'application/javascript' });
-    const swUrl = URL.createObjectURL(blob);
-    navigator.serviceWorker.register(swUrl, { scope: '/' })
-      .then(reg => {
-        console.log('Griffin Hauling: offline support active', reg.scope);
-        // Pre-cache fonts when online
-        if (navigator.onLine) {
-          caches.open('griffin-hauling-v1').then(cache => {
-            cache.add(window.location.href).catch(() => {});
-          });
-        }
-      })
-      .catch(err => console.log('SW registration skipped:', err));
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('Griffin Hauling: offline support active', reg.scope))
+      .catch(err => console.log('SW registration failed:', err));
 
     // Show offline banner if no connection
     window.addEventListener('offline', () => {
