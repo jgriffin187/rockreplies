@@ -1738,8 +1738,7 @@
     document.querySelector('.settings-bar').insertAdjacentElement('afterend', warn);
   }
 
-  function switchTab(id, el) {
-
+  // ── SCHEDULE ────────────────────────────────────────────
   function loadDeliveries() {
     try { return JSON.parse(localStorage.getItem(SCHED_KEY)) || []; }
     catch { return []; }
