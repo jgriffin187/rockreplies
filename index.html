@@ -585,7 +585,7 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    padding: 12px 14px 8px;
+    padding: 12px 14px 10px;
     gap: 10px;
     cursor: pointer;
   }
@@ -595,13 +595,34 @@
     font-weight: 700;
     color: var(--text);
     line-height: 1.2;
+    margin-bottom: 6px;
   }
 
-  .delivery-meta {
-    font-size: 11px;
+  .delivery-date-row {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--orange-hi);
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .delivery-material-row {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+
+  .delivery-total-row {
+    font-size: 12px;
+    font-weight: 700;
     color: var(--muted);
-    margin-top: 3px;
-    font-weight: 500;
+  }
+
+  .delivery-total-row span {
+    color: var(--orange-hi);
   }
 
   .delivery-badge {
@@ -1937,12 +1958,11 @@
     const renderCard = (d) => `
       <div class="delivery-card status-${d.status}" id="dcard-${d.id}">
         <div class="delivery-header" onclick="toggleDeliveryBody('${d.id}')">
-          <div>
+          <div style="flex:1;min-width:0;">
             <div class="delivery-name">${d.name}</div>
-            <div class="delivery-meta">
-              ${formatDate(d.date, d.time)}
-              ${d.materialName ? ' · ' + (d.qty || '') + ' ' + (d.unit || '') + ' ' + d.materialName : ''}
-            </div>
+            <div class="delivery-date-row">📅 ${formatDate(d.date, d.time)}</div>
+            ${d.materialName ? `<div class="delivery-material-row">🪨 ${(d.qty || '')} ${(d.unit || '')} of ${d.materialName}</div>` : ''}
+            <div class="delivery-total-row">Total: <span>$${(d.total||0).toFixed(2)}</span></div>
           </div>
           <span class="delivery-badge ${badgeClass[d.status]}">${statusLabel[d.status]}</span>
         </div>
