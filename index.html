@@ -525,6 +525,303 @@
     border: 1px solid rgba(248,113,113,0.2);
   }
   .error-msg.show { display: block; }
+
+  /* ── Schedule ── */
+  .sched-toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    align-items: center;
+  }
+
+  .btn-primary {
+    background: var(--orange);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .btn-primary:hover { background: var(--orange-hi); }
+
+  .toggle-past {
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 9px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-left: auto;
+  }
+  .toggle-past:hover { color: var(--text); }
+  .toggle-past.active { background: var(--surface); color: var(--text); border-color: var(--border-hi); }
+
+  .delivery-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .delivery-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .delivery-card:hover { border-color: var(--border-hi); }
+  .delivery-card.status-confirmed { border-left: 3px solid var(--green); }
+  .delivery-card.status-pending   { border-left: 3px solid var(--orange); }
+  .delivery-card.status-delivered { border-left: 3px solid var(--subtle); opacity: 0.75; }
+  .delivery-card.status-cancelled { border-left: 3px solid #ef4444; opacity: 0.6; }
+
+  .delivery-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 12px 14px 8px;
+    gap: 10px;
+    cursor: pointer;
+  }
+
+  .delivery-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .delivery-meta {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+    font-weight: 500;
+  }
+
+  .delivery-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .badge-pending   { background: rgba(245,130,31,0.15); color: var(--orange-hi); }
+  .badge-confirmed { background: rgba(34,197,94,0.15);  color: var(--green); }
+  .badge-delivered { background: rgba(58,80,112,0.3);   color: var(--muted); }
+  .badge-cancelled { background: rgba(239,68,68,0.15);  color: #f87171; }
+
+  .delivery-body {
+    display: none;
+    padding: 0 14px 14px;
+    border-top: 1px solid var(--border);
+  }
+  .delivery-body.open { display: block; }
+
+  .delivery-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+    margin-bottom: 12px;
+  }
+
+  .detail-item { display: flex; flex-direction: column; gap: 2px; }
+  .detail-label { font-size: 10px; color: var(--muted); font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; }
+  .detail-value { font-size: 13px; color: var(--text); font-weight: 500; }
+  .detail-full { grid-column: 1 / -1; }
+
+  .delivery-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .btn-status {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface2);
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.15s;
+  }
+  .btn-status:hover { color: var(--text); border-color: var(--border-hi); }
+  .btn-status.active { background: rgba(34,197,94,0.15); color: var(--green); border-color: var(--green); }
+
+  .btn-danger {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: var(--radius-sm);
+    background: rgba(239,68,68,0.1);
+    color: #f87171;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.15s;
+    margin-left: auto;
+  }
+  .btn-danger:hover { background: rgba(239,68,68,0.2); }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 500;
+    align-items: flex-end;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border-hi);
+    border-radius: 16px 16px 0 0;
+    padding: 20px 16px 36px;
+    width: 100%;
+    max-height: 92vh;
+    overflow-y: auto;
+    animation: slideUp 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+
+  .modal-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text);
+  }
+
+  .modal-close {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .form-group { margin-bottom: 14px; }
+
+  .form-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .form-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    padding: 9px 12px;
+    transition: border-color 0.15s;
+  }
+  .form-input:focus { outline: none; border-color: var(--orange); }
+  .form-input::placeholder { color: var(--subtle); }
+
+  .form-select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    padding: 9px 12px;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .form-select:focus { outline: none; border-color: var(--orange); }
+  .form-select option { background: #152035; }
+
+  .form-row { display: flex; gap: 10px; }
+  .form-row .form-group { flex: 1; min-width: 0; }
+
+  .form-total {
+    background: rgba(245,130,31,0.1);
+    border: 1px solid rgba(245,130,31,0.3);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--orange-hi);
+    text-align: center;
+  }
+
+  .material-toggle {
+    display: flex;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+
+  .material-toggle button {
+    flex: 1;
+    padding: 9px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .material-toggle button.active {
+    background: var(--orange);
+    color: white;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+  }
+  .empty-state .empty-icon { font-size: 36px; margin-bottom: 10px; }
+  .empty-state p { font-size: 13px; line-height: 1.6; }
 </style>
 </head>
 <body>
@@ -557,6 +854,7 @@
   <button class="tab" onclick="switchTab('info', this)">ℹ️ Info</button>
   <button class="tab" onclick="switchTab('compose', this)">✏️ Custom</button>
   <button class="tab" onclick="switchTab('estimator', this)">📐 Estimator</button>
+  <button class="tab" onclick="switchTab('schedule', this)">📅 Schedule</button>
 </div>
 
 <div class="main">
@@ -958,7 +1256,131 @@
 
   </div>
 
+  <!-- SCHEDULE -->
+  <div class="panel" id="panel-schedule">
+    <div class="sched-toolbar">
+      <button class="btn-primary" onclick="openModal()">+ Add Delivery</button>
+      <button class="toggle-past" id="togglePastBtn" onclick="togglePast()">Show Past</button>
+    </div>
+    <div class="delivery-list" id="deliveryList"></div>
+  </div>
+
 </div><!-- end main -->
+
+<!-- Add/Edit Delivery Modal -->
+<div class="modal-overlay" id="deliveryModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">New Delivery</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <input type="hidden" id="editingId" value="" />
+
+    <div class="form-group">
+      <label class="form-label">Customer Name</label>
+      <input type="text" class="form-input" id="f-name" placeholder="Jane Smith" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Phone Number</label>
+      <input type="tel" class="form-input" id="f-phone" placeholder="(303) 555-0100" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Delivery Address</label>
+      <input type="text" class="form-input" id="f-address" placeholder="123 Main St, Erie CO" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Material Type</label>
+      <div class="material-toggle">
+        <button id="mat-rock" class="active" onclick="setMaterial('rock')">🪨 Rock</button>
+        <button id="mat-mulch" onclick="setMaterial('mulch')">🌿 Mulch</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Material Name</label>
+      <input type="text" class="form-input" id="f-material-name" placeholder="e.g. White Quartz, Black Mulch" />
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Quantity</label>
+        <input type="number" class="form-input" id="f-qty" placeholder="2" min="0.25" step="0.25" oninput="calcTotal()" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Unit</label>
+        <div class="select-wrap">
+          <select class="form-select" id="f-unit">
+            <option value="tons">tons</option>
+            <option value="cubic yards">cubic yards</option>
+            <option value="cubic feet">cubic feet</option>
+            <option value="bags">bags</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Material Price ($)</label>
+        <input type="number" class="form-input" id="f-mat-price" placeholder="200" min="0" oninput="calcTotal()" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Delivery Fee ($)</label>
+        <input type="number" class="form-input" id="f-del-price" placeholder="100" min="0" oninput="calcTotal()" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Total Price</label>
+      <div class="form-total" id="f-total">$0.00</div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Delivery Date</label>
+        <input type="date" class="form-input" id="f-date" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Time</label>
+        <input type="time" class="form-input" id="f-time" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Status</label>
+      <div class="select-wrap">
+        <select class="form-select" id="f-status">
+          <option value="pending">Pending</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="delivered">Delivered</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Payment</label>
+      <div class="select-wrap">
+        <select class="form-select" id="f-payment">
+          <option value="unpaid">Unpaid</option>
+          <option value="paid-cash">Paid — Cash</option>
+          <option value="paid-venmo">Paid — Venmo</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea class="form-input" id="f-notes" rows="3" placeholder="Gate code, drop location, special instructions..." style="resize:vertical;"></textarea>
+    </div>
+
+    <button class="btn-calculate" onclick="saveDelivery()">Save Delivery</button>
+  </div>
+</div>
 
 <div class="toast" id="toast">Copied!</div>
 
@@ -1295,6 +1717,7 @@
   renderShapeUI();
   updateTemplates();
   renderSaved();
+  renderSchedule();
 
   // Persist settings whenever they change
   document.getElementById('priceInput').addEventListener('input', saveSettings);
@@ -1309,8 +1732,255 @@
     document.querySelector('.settings-bar').insertAdjacentElement('afterend', warn);
   }
 
-  // ── PWA: Inline Service Worker for Offline Support ──────
-  // ── PWA: Service Worker for Offline Support ──────
+  // ── SCHEDULE ────────────────────────────────────────────
+  const SCHED_KEY = 'griffin_schedule';
+  let showingPast = false;
+  let currentMaterial = 'rock';
+
+  function loadDeliveries() {
+    try { return JSON.parse(localStorage.getItem(SCHED_KEY)) || []; }
+    catch { return []; }
+  }
+
+  function saveDeliveries(arr) {
+    try { localStorage.setItem(SCHED_KEY, JSON.stringify(arr)); }
+    catch { showToast('⚠️ Storage error — launch from home screen!'); }
+  }
+
+  function setMaterial(type) {
+    currentMaterial = type;
+    document.getElementById('mat-rock').classList.toggle('active', type === 'rock');
+    document.getElementById('mat-mulch').classList.toggle('active', type === 'mulch');
+  }
+
+  function calcTotal() {
+    const mat = parseFloat(document.getElementById('f-mat-price').value) || 0;
+    const del = parseFloat(document.getElementById('f-del-price').value) || 0;
+    document.getElementById('f-total').textContent = '$' + (mat + del).toFixed(2);
+  }
+
+  function openModal(id) {
+    const modal = document.getElementById('deliveryModal');
+    document.getElementById('editingId').value = id || '';
+    document.getElementById('modalTitle').textContent = id ? 'Edit Delivery' : 'New Delivery';
+
+    if (id) {
+      const deliveries = loadDeliveries();
+      const d = deliveries.find(x => x.id === id);
+      if (d) {
+        document.getElementById('f-name').value      = d.name || '';
+        document.getElementById('f-phone').value     = d.phone || '';
+        document.getElementById('f-address').value   = d.address || '';
+        document.getElementById('f-material-name').value = d.materialName || '';
+        document.getElementById('f-qty').value       = d.qty || '';
+        document.getElementById('f-unit').value      = d.unit || 'tons';
+        document.getElementById('f-mat-price').value = d.matPrice || '';
+        document.getElementById('f-del-price').value = d.delPrice || '';
+        document.getElementById('f-date').value      = d.date || '';
+        document.getElementById('f-time').value      = d.time || '';
+        document.getElementById('f-status').value    = d.status || 'pending';
+        document.getElementById('f-payment').value   = d.payment || 'unpaid';
+        document.getElementById('f-notes').value     = d.notes || '';
+        setMaterial(d.material || 'rock');
+        calcTotal();
+      }
+    } else {
+      // Reset form
+      ['f-name','f-phone','f-address','f-material-name','f-qty','f-mat-price','f-del-price','f-notes'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('f-unit').value    = 'tons';
+      document.getElementById('f-status').value  = 'pending';
+      document.getElementById('f-payment').value = 'unpaid';
+      document.getElementById('f-date').value    = '';
+      document.getElementById('f-time').value    = '';
+      document.getElementById('f-total').textContent = '$0.00';
+      // Pre-fill delivery fee from settings
+      const settingsDel = document.getElementById('deliveryInput').value;
+      if (settingsDel) document.getElementById('f-del-price').value = settingsDel;
+      setMaterial('rock');
+      calcTotal();
+    }
+
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    document.getElementById('deliveryModal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function saveDelivery() {
+    const name = document.getElementById('f-name').value.trim();
+    const date = document.getElementById('f-date').value;
+    if (!name) { showToast('Please enter a customer name.'); return; }
+    if (!date) { showToast('Please select a delivery date.'); return; }
+
+    const deliveries = loadDeliveries();
+    const editingId  = document.getElementById('editingId').value;
+    const matPrice   = parseFloat(document.getElementById('f-mat-price').value) || 0;
+    const delPrice   = parseFloat(document.getElementById('f-del-price').value) || 0;
+
+    const entry = {
+      id:           editingId || Date.now().toString(),
+      name,
+      phone:        document.getElementById('f-phone').value.trim(),
+      address:      document.getElementById('f-address').value.trim(),
+      material:     currentMaterial,
+      materialName: document.getElementById('f-material-name').value.trim(),
+      qty:          document.getElementById('f-qty').value,
+      unit:         document.getElementById('f-unit').value,
+      matPrice,
+      delPrice,
+      total:        matPrice + delPrice,
+      date,
+      time:         document.getElementById('f-time').value,
+      status:       document.getElementById('f-status').value,
+      payment:      document.getElementById('f-payment').value,
+      notes:        document.getElementById('f-notes').value.trim(),
+    };
+
+    if (editingId) {
+      const idx = deliveries.findIndex(x => x.id === editingId);
+      if (idx >= 0) deliveries[idx] = entry;
+    } else {
+      deliveries.push(entry);
+    }
+
+    saveDeliveries(deliveries);
+    closeModal();
+    renderSchedule();
+    showToast(editingId ? 'Delivery updated!' : 'Delivery added!');
+  }
+
+  function deleteDelivery(id) {
+    const deliveries = loadDeliveries().filter(x => x.id !== id);
+    saveDeliveries(deliveries);
+    renderSchedule();
+    showToast('Deleted.');
+  }
+
+  function updateStatus(id, status) {
+    const deliveries = loadDeliveries();
+    const d = deliveries.find(x => x.id === id);
+    if (d) { d.status = status; saveDeliveries(deliveries); renderSchedule(); }
+  }
+
+  function togglePast() {
+    showingPast = !showingPast;
+    const btn = document.getElementById('togglePastBtn');
+    btn.textContent = showingPast ? 'Hide Past' : 'Show Past';
+    btn.classList.toggle('active', showingPast);
+    renderSchedule();
+  }
+
+  function toggleDeliveryBody(id) {
+    const el = document.getElementById('dbody-' + id);
+    if (el) el.classList.toggle('open');
+  }
+
+  function formatDate(dateStr, timeStr) {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr + 'T12:00:00');
+    const opts = { weekday: 'short', month: 'short', day: 'numeric' };
+    let out = d.toLocaleDateString('en-US', opts);
+    if (timeStr) {
+      const [h, m] = timeStr.split(':');
+      const hr = parseInt(h);
+      out += ' · ' + (hr > 12 ? hr - 12 : hr || 12) + ':' + m + (hr >= 12 ? ' PM' : ' AM');
+    }
+    return out;
+  }
+
+  function isPast(dateStr) {
+    if (!dateStr) return false;
+    return new Date(dateStr + 'T23:59:59') < new Date();
+  }
+
+  function renderSchedule() {
+    const all = loadDeliveries();
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    let upcoming = all.filter(d => !isPast(d.date) || d.status === 'confirmed' || d.status === 'pending');
+    let past     = all.filter(d => isPast(d.date) && d.status !== 'confirmed' && d.status !== 'pending');
+
+    // Sort upcoming by date asc, past by date desc
+    upcoming.sort((a,b) => a.date.localeCompare(b.date));
+    past.sort((a,b) => b.date.localeCompare(a.date));
+
+    const list = document.getElementById('deliveryList');
+    const toShow = showingPast ? [...upcoming, ...past] : upcoming;
+
+    if (toShow.length === 0) {
+      list.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <p>${showingPast ? 'No deliveries yet.' : 'No upcoming deliveries.<br>Tap <strong>+ Add Delivery</strong> to get started.'}</p>
+        </div>`;
+      return;
+    }
+
+    const statusLabel = { pending: 'Pending', confirmed: 'Confirmed', delivered: 'Delivered', cancelled: 'Cancelled' };
+    const badgeClass  = { pending: 'badge-pending', confirmed: 'badge-confirmed', delivered: 'badge-delivered', cancelled: 'badge-cancelled' };
+    const payLabel    = { 'unpaid': '💳 Unpaid', 'paid-cash': '💵 Paid (Cash)', 'paid-venmo': '✅ Paid (Venmo)' };
+
+    let html = '';
+
+    if (showingPast && upcoming.length > 0 && past.length > 0) {
+      html += `<div class="category-label" style="margin-top:4px;">Upcoming</div>`;
+    }
+
+    const renderCard = (d) => `
+      <div class="delivery-card status-${d.status}" id="dcard-${d.id}">
+        <div class="delivery-header" onclick="toggleDeliveryBody('${d.id}')">
+          <div>
+            <div class="delivery-name">${d.name}</div>
+            <div class="delivery-meta">
+              ${formatDate(d.date, d.time)}
+              ${d.materialName ? ' · ' + (d.qty || '') + ' ' + (d.unit || '') + ' ' + d.materialName : ''}
+            </div>
+          </div>
+          <span class="delivery-badge ${badgeClass[d.status]}">${statusLabel[d.status]}</span>
+        </div>
+        <div class="delivery-body" id="dbody-${d.id}">
+          <div class="delivery-detail-grid">
+            ${d.address ? `<div class="detail-item detail-full"><div class="detail-label">Address</div><div class="detail-value">${d.address}</div></div>` : ''}
+            ${d.phone ? `<div class="detail-item"><div class="detail-label">Phone</div><div class="detail-value"><a href="tel:${d.phone}" style="color:var(--orange);text-decoration:none;">${d.phone}</a></div></div>` : ''}
+            ${d.materialName ? `<div class="detail-item"><div class="detail-label">Material</div><div class="detail-value">${d.qty || ''} ${d.unit || ''} of ${d.materialName}</div></div>` : ''}
+            <div class="detail-item"><div class="detail-label">Material $</div><div class="detail-value">$${(d.matPrice||0).toFixed(2)}</div></div>
+            <div class="detail-item"><div class="detail-label">Delivery $</div><div class="detail-value">$${(d.delPrice||0).toFixed(2)}</div></div>
+            <div class="detail-item"><div class="detail-label">Total</div><div class="detail-value" style="color:var(--orange-hi);font-weight:700;">$${(d.total||0).toFixed(2)}</div></div>
+            <div class="detail-item"><div class="detail-label">Payment</div><div class="detail-value">${payLabel[d.payment] || d.payment}</div></div>
+            ${d.notes ? `<div class="detail-item detail-full"><div class="detail-label">Notes</div><div class="detail-value">${d.notes}</div></div>` : ''}
+          </div>
+          <div class="delivery-actions">
+            <button class="btn-status ${d.status==='pending'?'active':''}"    onclick="updateStatus('${d.id}','pending')">Pending</button>
+            <button class="btn-status ${d.status==='confirmed'?'active':''}"  onclick="updateStatus('${d.id}','confirmed')">Confirmed</button>
+            <button class="btn-status ${d.status==='delivered'?'active':''}"  onclick="updateStatus('${d.id}','delivered')">Delivered</button>
+            <button class="btn-status ${d.status==='cancelled'?'active':''}"  onclick="updateStatus('${d.id}','cancelled')">Cancelled</button>
+            <button class="btn btn-edit" style="margin-left:auto;" onclick="openModal('${d.id}')">Edit</button>
+            <button class="btn-danger" onclick="deleteDelivery('${d.id}')">Delete</button>
+          </div>
+        </div>
+      </div>`;
+
+    upcoming.forEach(d => { html += renderCard(d); });
+
+    if (showingPast && past.length > 0) {
+      html += `<div class="category-label" style="margin-top:16px;">Past Deliveries</div>`;
+      past.forEach(d => { html += renderCard(d); });
+    }
+
+    list.innerHTML = html;
+  }
+
+  // Close modal on overlay click
+  document.getElementById('deliveryModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
       .then(reg => console.log('Griffin Hauling: offline support active', reg.scope))
