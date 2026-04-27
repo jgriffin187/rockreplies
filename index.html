@@ -1744,7 +1744,7 @@
   renderShapeUI();
   updateTemplates();
   renderSaved();
-  renderSchedule();
+  initFirebase(); // initializes Firebase and then calls renderSchedule()
 
   // Persist settings whenever they change
   document.getElementById('priceInput').addEventListener('input', saveSettings);
@@ -1760,14 +1760,74 @@
   }
 
   // ── SCHEDULE ────────────────────────────────────────────
-  function loadDeliveries() {
-    try { return JSON.parse(localStorage.getItem(SCHED_KEY)) || []; }
-    catch { return []; }
+  // ── FIREBASE FIRESTORE SCHEDULE ─────────────────────────
+  // Config
+  const FB_CONFIG = {
+    apiKey:            "AIzaSyCUUZSS5AQ4NvWkmTy-cWJf3UgsbWziCrc",
+    authDomain:        "griffin-hauling.firebaseapp.com",
+    projectId:         "griffin-hauling",
+    storageBucket:     "griffin-hauling.firebasestorage.app",
+    messagingSenderId: "983521568457",
+    appId:             "1:983521568457:web:69ea6cd72df149b26c8f18"
+  };
+
+  // Load Firebase SDKs dynamically
+  let db = null;
+  let fbReady = false;
+
+  async function initFirebase() {
+    try {
+      const { initializeApp, getApps } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+      const { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, updateDoc } =
+        await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+
+      const app = getApps().length ? getApps()[0] : initializeApp(FB_CONFIG);
+      db = getFirestore(app);
+      fbReady = true;
+
+      // Attach Firestore helpers to window so functions below can use them
+      window._fb = { collection, getDocs, doc, setDoc, deleteDoc, updateDoc };
+
+      renderSchedule();
+    } catch (err) {
+      console.error('Firebase init failed:', err);
+      showToast('⚠️ Could not connect to database');
+      renderSchedule(); // fall through to empty state
+    }
   }
 
-  function saveDeliveries(arr) {
-    try { localStorage.setItem(SCHED_KEY, JSON.stringify(arr)); }
-    catch { showToast('⚠️ Storage error — launch from home screen!'); }
+  async function loadDeliveries() {
+    if (!fbReady) return [];
+    try {
+      const { collection, getDocs } = window._fb;
+      const snap = await getDocs(collection(db, 'deliveries'));
+      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (err) {
+      console.error('Load error:', err);
+      return [];
+    }
+  }
+
+  async function saveDeliveryToDb(entry) {
+    if (!fbReady) { showToast('⚠️ Database not ready'); return; }
+    try {
+      const { doc, setDoc } = window._fb;
+      await setDoc(doc(db, 'deliveries', entry.id), entry);
+    } catch (err) {
+      console.error('Save error:', err);
+      showToast('⚠️ Could not save — check connection');
+    }
+  }
+
+  async function deleteDeliveryFromDb(id) {
+    if (!fbReady) return;
+    try {
+      const { doc, deleteDoc } = window._fb;
+      await deleteDoc(doc(db, 'deliveries', id));
+    } catch (err) {
+      console.error('Delete error:', err);
+      showToast('⚠️ Could not delete — check connection');
+    }
   }
 
   function setMaterial(type) {
@@ -1782,35 +1842,34 @@
     document.getElementById('f-total').textContent = '$' + (mat + del).toFixed(2);
   }
 
-  function openModal(id) {
+  async function openModal(id) {
     const modal = document.getElementById('deliveryModal');
     document.getElementById('editingId').value = id || '';
     document.getElementById('modalTitle').textContent = id ? 'Edit Delivery' : 'New Delivery';
 
     if (id) {
-      const deliveries = loadDeliveries();
+      const deliveries = await loadDeliveries();
       const d = deliveries.find(x => x.id === id);
       if (d) {
-        document.getElementById('f-name').value      = d.name || '';
-        document.getElementById('f-phone').value     = d.phone || '';
-        document.getElementById('f-address').value   = d.address || '';
-        document.getElementById('f-material-name').value = d.materialName || '';
-        document.getElementById('f-qty').value       = d.qty || '';
-        document.getElementById('f-unit').value      = d.unit || 'tons';
-        document.getElementById('f-mat-price').value = d.matPrice || '';
-        document.getElementById('f-del-price').value = d.delPrice || '';
-        document.getElementById('f-date').value      = d.date || '';
-        document.getElementById('f-time').value      = d.time || '';
-        document.getElementById('f-status').value    = d.status || 'pending';
-        document.getElementById('f-payment').value   = d.payment || 'unpaid';
-        document.getElementById('f-notes').value     = d.notes || '';
+        document.getElementById('f-name').value           = d.name || '';
+        document.getElementById('f-phone').value          = d.phone || '';
+        document.getElementById('f-address').value        = d.address || '';
+        document.getElementById('f-material-name').value  = d.materialName || '';
+        document.getElementById('f-qty').value            = d.qty || '';
+        document.getElementById('f-unit').value           = d.unit || 'tons';
+        document.getElementById('f-mat-price').value      = d.matPrice || '';
+        document.getElementById('f-del-price').value      = d.delPrice || '';
+        document.getElementById('f-date').value           = d.date || '';
+        document.getElementById('f-time').value           = d.time || '';
+        document.getElementById('f-status').value         = d.status || 'pending';
+        document.getElementById('f-payment').value        = d.payment || 'unpaid';
+        document.getElementById('f-notes').value          = d.notes || '';
         setMaterial(d.material || 'rock');
         calcTotal();
       }
     } else {
-      // Reset form
-      ['f-name','f-phone','f-address','f-material-name','f-qty','f-mat-price','f-del-price','f-notes'].forEach(id => {
-        document.getElementById(id).value = '';
+      ['f-name','f-phone','f-address','f-material-name','f-qty','f-mat-price','f-del-price','f-notes'].forEach(fid => {
+        document.getElementById(fid).value = '';
       });
       document.getElementById('f-unit').value    = 'tons';
       document.getElementById('f-status').value  = 'pending';
@@ -1818,7 +1877,6 @@
       document.getElementById('f-date').value    = '';
       document.getElementById('f-time').value    = '';
       document.getElementById('f-total').textContent = '$0.00';
-      // Pre-fill delivery fee from settings
       const settingsDel = document.getElementById('deliveryInput').value;
       if (settingsDel) document.getElementById('f-del-price').value = settingsDel;
       setMaterial('rock');
@@ -1834,16 +1892,15 @@
     document.body.style.overflow = '';
   }
 
-  function saveDelivery() {
+  async function saveDelivery() {
     const name = document.getElementById('f-name').value.trim();
     const date = document.getElementById('f-date').value;
     if (!name) { showToast('Please enter a customer name.'); return; }
     if (!date) { showToast('Please select a delivery date.'); return; }
 
-    const deliveries = loadDeliveries();
-    const editingId  = document.getElementById('editingId').value;
-    const matPrice   = parseFloat(document.getElementById('f-mat-price').value) || 0;
-    const delPrice   = parseFloat(document.getElementById('f-del-price').value) || 0;
+    const editingId = document.getElementById('editingId').value;
+    const matPrice  = parseFloat(document.getElementById('f-mat-price').value) || 0;
+    const delPrice  = parseFloat(document.getElementById('f-del-price').value) || 0;
 
     const entry = {
       id:           editingId || Date.now().toString(),
@@ -1864,30 +1921,28 @@
       notes:        document.getElementById('f-notes').value.trim(),
     };
 
-    if (editingId) {
-      const idx = deliveries.findIndex(x => x.id === editingId);
-      if (idx >= 0) deliveries[idx] = entry;
-    } else {
-      deliveries.push(entry);
-    }
-
-    saveDeliveries(deliveries);
+    showToast('Saving...');
+    await saveDeliveryToDb(entry);
     closeModal();
-    renderSchedule();
+    await renderSchedule();
     showToast(editingId ? 'Delivery updated!' : 'Delivery added!');
   }
 
-  function deleteDelivery(id) {
-    const deliveries = loadDeliveries().filter(x => x.id !== id);
-    saveDeliveries(deliveries);
-    renderSchedule();
+  async function deleteDelivery(id) {
+    await deleteDeliveryFromDb(id);
+    await renderSchedule();
     showToast('Deleted.');
   }
 
-  function updateStatus(id, status) {
-    const deliveries = loadDeliveries();
-    const d = deliveries.find(x => x.id === id);
-    if (d) { d.status = status; saveDeliveries(deliveries); renderSchedule(); }
+  async function updateStatus(id, status) {
+    if (!fbReady) return;
+    try {
+      const { doc, updateDoc } = window._fb;
+      await updateDoc(doc(db, 'deliveries', id), { status });
+      await renderSchedule();
+    } catch (err) {
+      console.error('Status update error:', err);
+    }
   }
 
   function togglePast() {
@@ -1921,10 +1976,17 @@
     return new Date(dateStr + 'T23:59:59') < new Date();
   }
 
-  function renderSchedule() {
-    const all = loadDeliveries();
-    const today = new Date();
-    today.setHours(0,0,0,0);
+  async function renderSchedule() {
+    const list = document.getElementById('deliveryList');
+
+    if (!fbReady) {
+      list.innerHTML = `<div class="empty-state"><div class="empty-icon">⏳</div><p>Connecting to database...</p></div>`;
+      return;
+    }
+
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">⏳</div><p>Loading deliveries...</p></div>`;
+
+    const all = await loadDeliveries();
 
     let upcoming = all.filter(d => !isPast(d.date) || d.status === 'confirmed' || d.status === 'pending');
     let past     = all.filter(d => isPast(d.date) && d.status !== 'confirmed' && d.status !== 'pending');
@@ -1933,7 +1995,6 @@
     upcoming.sort((a,b) => a.date.localeCompare(b.date));
     past.sort((a,b) => b.date.localeCompare(a.date));
 
-    const list = document.getElementById('deliveryList');
     const toShow = showingPast ? [...upcoming, ...past] : upcoming;
 
     if (toShow.length === 0) {
