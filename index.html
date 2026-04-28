@@ -1506,22 +1506,28 @@
   }
 
   async function saveCompose() {
-    if (!fbReady) { showToast('⚠️ Database not ready'); return; }
+    console.log('saveCompose called, fbReady:', fbReady, 'window._fb:', !!window._fb);
     const text = document.getElementById('composeArea').value.trim();
     if (!text) { showToast('Write something first!'); return; }
+    if (!fbReady || !window._fb) {
+      showToast('⚠️ Database not ready — try again in a moment');
+      console.warn('Firebase not ready when saveCompose called');
+      return;
+    }
+    showToast('Saving...');
     try {
       const { collection, getDocs, doc, setDoc } = window._fb;
-      // Get current count for ordering
       const snap = await getDocs(collection(db, 'custom_messages'));
       const order = snap.size;
       const id = Date.now().toString();
+      console.log('Saving custom message with id:', id);
       await setDoc(doc(db, 'custom_messages', id), { text, order });
       document.getElementById('composeArea').value = '';
       await renderSaved();
       showToast('Saved!');
     } catch (err) {
       console.error('Save custom error:', err);
-      showToast('⚠️ Could not save — check connection');
+      showToast('⚠️ Could not save: ' + err.message);
     }
   }
 
@@ -1783,6 +1789,7 @@
 
       // Attach Firestore helpers to window so functions below can use them
       window._fb = { collection, getDocs, doc, setDoc, deleteDoc, updateDoc };
+      console.log('✅ Firebase ready — window._fb set');
 
       renderSchedule();
       renderSaved();
