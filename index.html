@@ -1412,6 +1412,10 @@
   let showingPast = false;
   let currentMaterial = 'rock';
 
+  // ── Firebase state (declared early to avoid temporal dead zone errors) ──
+  let db = null;
+  let fbReady = false;
+
   function switchTab(id, el) {
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -1488,6 +1492,27 @@
 
   // ── Custom replies — persisted to localStorage ──
   const SETTINGS_KEY = 'griffin_settings';
+
+  function saveSettings() {
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+        price:    document.getElementById('priceInput').value,
+        unit:     document.getElementById('unitInput').value,
+        delivery: document.getElementById('deliveryInput').value
+      }));
+    } catch {}
+  }
+
+  function loadSettings() {
+    try {
+      const s = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+      if (s) {
+        if (s.price)    document.getElementById('priceInput').value    = s.price;
+        if (s.unit)     document.getElementById('unitInput').value     = s.unit;
+        if (s.delivery) document.getElementById('deliveryInput').value = s.delivery;
+      }
+    } catch {}
+  }
 
   // ── Custom Messages — stored in Firebase ──────────────
   async function loadCustom() {
@@ -1753,6 +1778,11 @@
   document.getElementById('unitInput').addEventListener('input', saveSettings);
   document.getElementById('deliveryInput').addEventListener('input', saveSettings);
 
+  // Persist settings whenever they change
+  document.getElementById('priceInput').addEventListener('input', saveSettings);
+  document.getElementById('unitInput').addEventListener('input', saveSettings);
+  document.getElementById('deliveryInput').addEventListener('input', saveSettings);
+
   // Warn if localStorage is blocked (e.g. Safari in-browser with tracking protection)
   if (!storageAvailable()) {
     const warn = document.createElement('div');
@@ -1774,9 +1804,6 @@
   };
 
   // Load Firebase SDKs dynamically
-  let db = null;
-  let fbReady = false;
-
   async function initFirebase() {
     try {
       const { initializeApp, getApps } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
