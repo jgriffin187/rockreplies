@@ -1487,92 +1487,89 @@
   }
 
   // ── Custom replies — persisted to localStorage ──
-  const STORAGE_KEY = 'griffin_custom_replies';
   const SETTINGS_KEY = 'griffin_settings';
 
-  function loadCustom() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
-    catch { return []; }
-  }
-
-  function persistCustom(arr) {
+  // ── Custom Messages — stored in Firebase ──────────────
+  async function loadCustom() {
+    if (!fbReady) return [];
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
-    } catch {
-      showToast('⚠️ Storage unavailable — launch from home screen icon!');
+      const { collection, getDocs } = window._fb;
+      const snap = await getDocs(collection(db, 'custom_messages'));
+      // Return sorted by order field
+      return snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+    } catch (err) {
+      console.error('Load custom error:', err);
+      return [];
     }
   }
 
-  // Save settings to localStorage so they persist too
-  function saveSettings() {
-    try {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify({
-        price: document.getElementById('priceInput').value,
-        unit:  document.getElementById('unitInput').value,
-        delivery: document.getElementById('deliveryInput').value
-      }));
-    } catch {}
-  }
-
-  function loadSettings() {
-    try {
-      const s = JSON.parse(localStorage.getItem(SETTINGS_KEY));
-      if (s) {
-        if (s.price)    document.getElementById('priceInput').value    = s.price;
-        if (s.unit)     document.getElementById('unitInput').value     = s.unit;
-        if (s.delivery) document.getElementById('deliveryInput').value = s.delivery;
-      }
-    } catch {}
-  }
-
-  function saveCompose() {
-    if (!storageAvailable()) {
-      showToast('⚠️ Open from home screen icon to save messages!');
-      return;
-    }
+  async function saveCompose() {
+    if (!fbReady) { showToast('⚠️ Database not ready'); return; }
     const text = document.getElementById('composeArea').value.trim();
     if (!text) { showToast('Write something first!'); return; }
-    const arr = loadCustom();
-    arr.push(text);
-    persistCustom(arr);
-    renderSaved();
-    showToast('Saved!');
+    try {
+      const { collection, getDocs, doc, setDoc } = window._fb;
+      // Get current count for ordering
+      const snap = await getDocs(collection(db, 'custom_messages'));
+      const order = snap.size;
+      const id = Date.now().toString();
+      await setDoc(doc(db, 'custom_messages', id), { text, order });
+      document.getElementById('composeArea').value = '';
+      await renderSaved();
+      showToast('Saved!');
+    } catch (err) {
+      console.error('Save custom error:', err);
+      showToast('⚠️ Could not save — check connection');
+    }
   }
 
-  function renderSaved() {
-    const arr = loadCustom();
+  async function renderSaved() {
     const container = document.getElementById('custom-saved');
+    if (!fbReady) {
+      container.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px;">Connecting to database...</div>';
+      return;
+    }
+    const arr = await loadCustom();
     if (!arr.length) {
       container.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px;">No saved messages yet.</div>';
       return;
     }
-    container.innerHTML = arr.map((msg, i) => `
+    container.innerHTML = arr.map((item, i) => `
       <div class="card">
         <div class="card-header">
           <span class="card-title">Custom reply ${i + 1}</span>
           <div class="card-actions">
-            <button class="btn btn-edit" onclick="deleteCustom(${i})">Del</button>
-            <button class="btn btn-copy" onclick="copyRaw(this, ${i})">Copy</button>
+            <button class="btn btn-edit" onclick="deleteCustom('${item.id}')">Del</button>
+            <button class="btn btn-copy" onclick="copyRaw(this, '${item.id}')">Copy</button>
           </div>
         </div>
         <div class="card-body open">
-          <div class="card-text">${msg.replace(/</g,'&lt;')}</div>
+          <div class="card-text">${item.text.replace(/</g,'&lt;')}</div>
         </div>
       </div>
     `).join('');
   }
 
-  function deleteCustom(i) {
-    const arr = loadCustom();
-    arr.splice(i, 1);
-    persistCustom(arr);
-    renderSaved();
-    showToast('Deleted.');
+  async function deleteCustom(id) {
+    if (!fbReady) return;
+    try {
+      const { doc, deleteDoc } = window._fb;
+      await deleteDoc(doc(db, 'custom_messages', id));
+      await renderSaved();
+      showToast('Deleted.');
+    } catch (err) {
+      console.error('Delete custom error:', err);
+      showToast('⚠️ Could not delete');
+    }
   }
 
-  function copyRaw(btn, i) {
-    const arr = loadCustom();
-    navigator.clipboard.writeText(arr[i]).then(() => {
+  async function copyRaw(btn, id) {
+    const arr = await loadCustom();
+    const item = arr.find(x => x.id === id);
+    if (!item) return;
+    navigator.clipboard.writeText(item.text).then(() => {
       btn.textContent = '✓ Done';
       btn.classList.add('copied');
       showToast('Copied!');
@@ -1743,8 +1740,7 @@
   loadSettings();
   renderShapeUI();
   updateTemplates();
-  renderSaved();
-  initFirebase(); // initializes Firebase and then calls renderSchedule()
+  initFirebase(); // connects to Firebase, then calls renderSchedule() and renderSaved()
 
   // Persist settings whenever they change
   document.getElementById('priceInput').addEventListener('input', saveSettings);
@@ -1789,6 +1785,7 @@
       window._fb = { collection, getDocs, doc, setDoc, deleteDoc, updateDoc };
 
       renderSchedule();
+      renderSaved();
     } catch (err) {
       console.error('Firebase init failed:', err);
       showToast('⚠️ Could not connect to database');
