@@ -2023,7 +2023,12 @@
     let past     = all.filter(d => isPast(d.date) && d.status !== 'confirmed' && d.status !== 'pending');
 
     // Sort upcoming by date asc, past by date desc
-    upcoming.sort((a,b) => a.date.localeCompare(b.date));
+    upcoming.sort((a, b) => {
+      const aConf = a.status === 'confirmed' ? 0 : 1;
+      const bConf = b.status === 'confirmed' ? 0 : 1;
+      if (aConf !== bConf) return aConf - bConf;
+      return a.date.localeCompare(b.date);
+    });
     past.sort((a,b) => b.date.localeCompare(a.date));
 
     const toShow = showingPast ? [...upcoming, ...past] : upcoming;
