@@ -1283,6 +1283,7 @@
     <div class="sched-toolbar">
       <button class="btn-primary" onclick="openModal()">+ Add Delivery</button>
       <button class="toggle-past" id="togglePastBtn" onclick="togglePast()">Show Past</button>
+      <button class="toggle-past" id="toggleDeliveredBtn" onclick="toggleDelivered()">Show Delivered</button>
     </div>
     <div class="delivery-list" id="deliveryList"></div>
   </div>
@@ -1410,6 +1411,7 @@
   // ── Schedule state (declared early so all functions can access) ──
   const SCHED_KEY = 'griffin_schedule';
   let showingPast = false;
+  let showingDelivered = false;
   let currentMaterial = 'rock';
 
   // ── Firebase state (declared early to avoid temporal dead zone errors) ──
@@ -1984,6 +1986,14 @@
     renderSchedule();
   }
 
+  function toggleDelivered() {
+    showingDelivered = !showingDelivered;
+    const btn = document.getElementById('toggleDeliveredBtn');
+    btn.textContent = showingDelivered ? 'Hide Delivered' : 'Show Delivered';
+    btn.classList.toggle('active', showingDelivered);
+    renderSchedule();
+  }
+
   function toggleDeliveryBody(id) {
     const el = document.getElementById('dbody-' + id);
     if (el) el.classList.toggle('open');
@@ -2019,10 +2029,14 @@
 
     const all = await loadDeliveries();
 
-    let upcoming = all.filter(d => !isPast(d.date) || d.status === 'confirmed' || d.status === 'pending');
-    let past     = all.filter(d => isPast(d.date) && d.status !== 'confirmed' && d.status !== 'pending');
+    // Separate delivered from the rest
+    let delivered = all.filter(d => d.status === 'delivered');
+    let nonDelivered = all.filter(d => d.status !== 'delivered');
 
-    // Sort upcoming by date asc, past by date desc
+    let upcoming = nonDelivered.filter(d => !isPast(d.date) || d.status === 'confirmed' || d.status === 'pending');
+    let past     = nonDelivered.filter(d => isPast(d.date) && d.status !== 'confirmed' && d.status !== 'pending');
+
+    // Sort upcoming: confirmed first, then by date
     upcoming.sort((a, b) => {
       const aConf = a.status === 'confirmed' ? 0 : 1;
       const bConf = b.status === 'confirmed' ? 0 : 1;
@@ -2030,14 +2044,17 @@
       return a.date.localeCompare(b.date);
     });
     past.sort((a,b) => b.date.localeCompare(a.date));
+    delivered.sort((a,b) => b.date.localeCompare(a.date));
 
-    const toShow = showingPast ? [...upcoming, ...past] : upcoming;
+    let toShow = [...upcoming];
+    if (showingPast) toShow = [...toShow, ...past];
+    if (showingDelivered) toShow = [...toShow, ...delivered];
 
     if (toShow.length === 0) {
       list.innerHTML = `
         <div class="empty-state">
           <div class="empty-icon">📋</div>
-          <p>${showingPast ? 'No deliveries yet.' : 'No upcoming deliveries.<br>Tap <strong>+ Add Delivery</strong> to get started.'}</p>
+          <p>${(showingPast || showingDelivered) ? 'No deliveries yet.' : 'No upcoming deliveries.<br>Tap <strong>+ Add Delivery</strong> to get started.'}</p>
         </div>`;
       return;
     }
@@ -2047,10 +2064,6 @@
     const payLabel    = { 'unpaid': '💳 Unpaid', 'paid-cash': '💵 Paid (Cash)', 'paid-venmo': '✅ Paid (Venmo)' };
 
     let html = '';
-
-    if (showingPast && upcoming.length > 0 && past.length > 0) {
-      html += `<div class="category-label" style="margin-top:4px;">Upcoming</div>`;
-    }
 
     const renderCard = (d) => `
       <div class="delivery-card status-${d.status}" id="dcard-${d.id}">
@@ -2065,7 +2078,7 @@
         </div>
         <div class="delivery-body" id="dbody-${d.id}">
           <div class="delivery-detail-grid">
-            ${d.address ? `<div class="detail-item detail-full"><div class="detail-label">Address</div><div class="detail-value">${d.address}</div></div>` : ''}
+            ${d.address ? `<div class="detail-item detail-full"><div class="detail-label">Address</div><div class="detail-value"><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(d.address)}" target="_blank" style="color:var(--orange);text-decoration:none;">📍 ${d.address}</a></div></div>` : ''}
             ${d.phone ? `<div class="detail-item"><div class="detail-label">Phone</div><div class="detail-value"><a href="tel:${d.phone}" style="color:var(--orange);text-decoration:none;">${d.phone}</a></div></div>` : ''}
             ${d.materialName ? `<div class="detail-item"><div class="detail-label">Material</div><div class="detail-value">${d.qty || ''} ${d.unit || ''} of ${d.materialName}</div></div>` : ''}
             <div class="detail-item"><div class="detail-label">Material $</div><div class="detail-value">$${(d.matPrice||0).toFixed(2)}</div></div>
@@ -2090,6 +2103,11 @@
     if (showingPast && past.length > 0) {
       html += `<div class="category-label" style="margin-top:16px;">Past Deliveries</div>`;
       past.forEach(d => { html += renderCard(d); });
+    }
+
+    if (showingDelivered && delivered.length > 0) {
+      html += `<div class="category-label" style="margin-top:16px;">Delivered</div>`;
+      delivered.forEach(d => { html += renderCard(d); });
     }
 
     list.innerHTML = html;
