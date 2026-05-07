@@ -1445,9 +1445,38 @@
     });
   }
 
+  function safeCopy(text, onSuccess) {
+    // Safari iOS requires clipboard access to be synchronous within the user gesture.
+    // navigator.clipboard.writeText() can fail in Safari; fall back to execCommand.
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(onSuccess).catch(() => {
+        execCommandCopy(text, onSuccess);
+      });
+    } else {
+      execCommandCopy(text, onSuccess);
+    }
+  }
+
+  function execCommandCopy(text, onSuccess) {
+    const el = document.createElement('textarea');
+    el.value = text;
+    el.style.position = 'fixed';
+    el.style.top = '0';
+    el.style.left = '0';
+    el.style.opacity = '0';
+    el.setAttribute('readonly', '');
+    document.body.appendChild(el);
+    el.focus();
+    el.select();
+    el.setSelectionRange(0, el.value.length); // iOS needs this
+    const ok = document.execCommand('copy');
+    document.body.removeChild(el);
+    if (ok && onSuccess) onSuccess();
+  }
+
   function copyCard(btn) {
     const text = btn.closest('.card').querySelector('.card-text').innerText.trim();
-    navigator.clipboard.writeText(text).then(() => {
+    safeCopy(text, () => {
       btn.textContent = '✓ Done';
       btn.classList.add('copied');
       showToast('Copied to clipboard!');
@@ -1476,7 +1505,7 @@
   function copyCompose() {
     const text = document.getElementById('composeArea').value.trim();
     if (!text) { showToast('Nothing to copy!'); return; }
-    navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard!'));
+    safeCopy(text, () => showToast('Copied to clipboard!'));
   }
 
   function clearCompose() {
@@ -1575,7 +1604,7 @@
           <span class="card-title">Custom reply ${i + 1}</span>
           <div class="card-actions">
             <button class="btn btn-edit" onclick="deleteCustom('${item.id}')">Del</button>
-            <button class="btn btn-copy" onclick="copyRaw(this, '${item.id}')">Copy</button>
+            <button class="btn btn-copy" onclick="copyRaw(this)">Copy</button>
           </div>
         </div>
         <div class="card-body open">
@@ -1598,11 +1627,11 @@
     }
   }
 
-  async function copyRaw(btn, id) {
-    const arr = await loadCustom();
-    const item = arr.find(x => x.id === id);
-    if (!item) return;
-    navigator.clipboard.writeText(item.text).then(() => {
+  function copyRaw(btn) {
+    // Read text directly from the DOM (synchronous) so Safari's gesture requirement is met.
+    const text = btn.closest('.card').querySelector('.card-text').innerText.trim();
+    if (!text) return;
+    safeCopy(text, () => {
       btn.textContent = '✓ Done';
       btn.classList.add('copied');
       showToast('Copied!');
@@ -1751,7 +1780,7 @@
     if (!window._lastEstimate) return;
     const { tons, sqFt, depth, materialName } = window._lastEstimate;
     const msg = `Here's a rough estimate for your project: covering ${sqFt} sq ft at ${depth}" deep with ${materialName} would require approximately ${tons} tons. Let me know if you'd like to adjust the quantity or set up a delivery!`;
-    navigator.clipboard.writeText(msg).then(() => showToast('Estimate copied as message!'));
+    safeCopy(msg, () => showToast('Estimate copied as message!'));
   }
 
   function resetEstimator() {
