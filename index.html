@@ -844,6 +844,138 @@
   }
   .empty-state .empty-icon { font-size: 36px; margin-bottom: 10px; }
   .empty-state p { font-size: 13px; line-height: 1.6; }
+
+  /* ── Catalog tab ── */
+  .catalog-search {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .catalog-search input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    padding: 8px 12px;
+    transition: border-color 0.15s;
+  }
+  .catalog-search input:focus { outline: none; border-color: var(--orange); }
+  .catalog-search input::placeholder { color: var(--muted); }
+
+  .catalog-sort {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    padding: 8px 10px;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .catalog-sort:focus { outline: none; border-color: var(--orange); }
+
+  .catalog-stats {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .catalog-stat {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    text-align: center;
+  }
+  .catalog-stat-val {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--orange-hi);
+    font-family: 'Sora', sans-serif;
+  }
+  .catalog-stat-lbl {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-top: 2px;
+  }
+
+  .catalog-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    margin-bottom: 8px;
+  }
+  .catalog-item:hover {
+    border-color: var(--border-hi);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+  }
+  .catalog-item-info { flex: 1; min-width: 0; }
+  .catalog-item-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .catalog-item-sku {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+    font-family: monospace;
+    letter-spacing: 0.3px;
+  }
+  .catalog-item-prices {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+  .catalog-my-price {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--orange-hi);
+  }
+  .catalog-list-price {
+    font-size: 11px;
+    color: var(--muted);
+    text-decoration: line-through;
+  }
+  .catalog-margin {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--green);
+    background: rgba(34,197,94,0.12);
+    border-radius: 4px;
+    padding: 2px 6px;
+  }
+  .catalog-link {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 16px;
+    flex-shrink: 0;
+    transition: color 0.15s;
+  }
+  .catalog-link:hover { color: var(--orange); }
+  .catalog-no-results {
+    text-align: center;
+    padding: 32px;
+    color: var(--muted);
+    font-size: 13px;
+  }
 </style>
 </head>
 <body>
@@ -877,6 +1009,7 @@
   <button class="tab" onclick="switchTab('compose', this)">✏️ Custom</button>
   <button class="tab" onclick="switchTab('estimator', this)">📐 Estimator</button>
   <button class="tab" onclick="switchTab('schedule', this)">📅 Schedule</button>
+  <button class="tab" onclick="switchTab('catalog', this)">📋 Catalog</button>
 </div>
 
 <div class="main">
@@ -1286,6 +1419,38 @@
       <button class="toggle-past" id="toggleDeliveredBtn" onclick="toggleDelivered()">Show Delivered</button>
     </div>
     <div class="delivery-list" id="deliveryList"></div>
+  </div>
+
+  <!-- CATALOG -->
+  <div class="panel" id="panel-catalog">
+    <div class="category-label">Product catalog</div>
+
+    <div class="catalog-stats">
+      <div class="catalog-stat">
+        <div class="catalog-stat-val">24</div>
+        <div class="catalog-stat-lbl">Products</div>
+      </div>
+      <div class="catalog-stat">
+        <div class="catalog-stat-val" id="cat-avg-margin">—</div>
+        <div class="catalog-stat-lbl">Avg Margin</div>
+      </div>
+      <div class="catalog-stat">
+        <div class="catalog-stat-val" id="cat-price-range">—</div>
+        <div class="catalog-stat-lbl">Price Range</div>
+      </div>
+    </div>
+
+    <div class="catalog-search">
+      <input type="text" id="catalogSearch" placeholder="Search products…" oninput="filterCatalog()" />
+      <select class="catalog-sort" id="catalogSort" onchange="filterCatalog()">
+        <option value="name">A–Z</option>
+        <option value="price-asc">$ Low</option>
+        <option value="price-desc">$ High</option>
+        <option value="margin">Margin</option>
+      </select>
+    </div>
+
+    <div id="catalogList"></div>
   </div>
 
 </div><!-- end main -->
@@ -2165,6 +2330,80 @@
       if (b) b.remove();
     });
   }
+
+  // ── Catalog ──
+  const CATALOG = [
+    { sku: '94095563', ghSku: 'GH47047781.5',   name: '3/4" Colorado Rose',          myPrice: 80,  listPrice: 142, margin: 43.7, url: 'https://www.ewingoutdoorsupply.com/94095563-colorado-rose-3-4in-ton' },
+    { sku: '94090784', ghSku: 'GH47045392',      name: '1 1/2" Mountain White Quartz', myPrice: 108, listPrice: 163, margin: 33.7, url: 'https://www.ewingoutdoorsupply.com/94090784-1-1-2-mountain-white-quartz-ton' },
+    { sku: '94090003', ghSku: 'GH47045001.5',    name: '1-2" White River Rock',        myPrice: 100, listPrice: 151, margin: 33.8, url: 'https://www.ewingoutdoorsupply.com/94090003-1-2-white-river-rock-ton' },
+    { sku: '',         ghSku: '',                name: '3/8-1/2" Mesa Pebbles',        myPrice: null,listPrice: null,margin: null, url: '' },
+    { sku: '94090105', ghSku: 'GH47045052.5',    name: '2" Mesa River Rock',           myPrice: 118, listPrice: 167, margin: 29.3, url: 'https://www.ewingoutdoorsupply.com/94090105-2-mesa-river-rock-ton' },
+    { sku: '94090794', ghSku: 'GH47045397',      name: '1 1/2" Black Obsidian',        myPrice: 108, listPrice: 152, margin: 28.9, url: 'https://www.ewingoutdoorsupply.com/94090794-1-1-2-black-obsidian-ton' },
+    { sku: '94090562', ghSku: 'GH47045281',      name: '3/4" Dalmatian',               myPrice: 63,  listPrice: 100, margin: 37.0, url: 'https://www.ewingoutdoorsupply.com/94090562-dalmation-3-4-ton' },
+    { sku: '94090564', ghSku: 'GH47045282',      name: '1 1/2" Dalmatian',             myPrice: 63,  listPrice: 100, margin: 37.0, url: 'https://www.ewingoutdoorsupply.com/94090564-dalmation-1-1-2-ton' },
+    { sku: '94090124', ghSku: 'GH47045062',      name: '1 1/2" Granite',               myPrice: 71,  listPrice: 116, margin: 38.8, url: 'https://www.ewingoutdoorsupply.com/94090124-1-1-2-granite-rock-ton' },
+    { sku: '94090122', ghSku: 'GH47045061',      name: '3/4" Granite',                 myPrice: 71,  listPrice: 116, margin: 38.8, url: 'https://www.ewingoutdoorsupply.com/94090122-3-4-granite-rock-ton' },
+    { sku: '94090064', ghSku: 'GH47045032',      name: '1 1/2" Multi River Rock',      myPrice: 86,  listPrice: 121, margin: 28.9, url: 'https://www.ewingoutdoorsupply.com/94090064-1-1-2-multi-river-rock-ton' },
+    { sku: '94090684', ghSku: 'GH47045342',      name: '1 1/2" Platte River Rock',     myPrice: 55,  listPrice: 99,  margin: 44.4, url: 'https://www.ewingoutdoorsupply.com/94090684-platte-river-rock-1-1-2-ton' },
+    { sku: '94090713', ghSku: 'GH47045356.5',    name: '3/4" Platte River Rock',       myPrice: 55,  listPrice: 99,  margin: 44.4, url: 'https://www.ewingoutdoorsupply.com/94090713-3-4-platte-river-rock-ton' },
+    { sku: '94090024', ghSku: 'GH47045022',      name: '1 1/2" Gold River Rock',       myPrice: 55,  listPrice: 109, margin: 49.5, url: 'https://www.ewingoutdoorsupply.com/94090024-1-1-2-gold-river-rock-ton' },
+    { sku: '94090142', ghSku: 'GH47045071',      name: '3/4" TT Blue Gray',            myPrice: 69,  listPrice: 119, margin: 42.0, url: 'https://www.ewingoutdoorsupply.com/94090142-3-4-tt-blue-gray-rock-ton' },
+    { sku: '94090346', ghSku: 'GH47045173',      name: 'Charcoal Breeze',              myPrice: 39,  listPrice: 77,  margin: 49.4, url: 'https://www.ewingoutdoorsupply.com/94090346-charcoal-breeze-ton' },
+    { sku: '94090120', ghSku: 'GH47045060',      name: '3/8" Granite Chip',            myPrice: 91,  listPrice: 139, margin: 34.5, url: 'https://www.ewingoutdoorsupply.com/94090120-3-8-granite-chip-rock-ton' },
+    { sku: '94090774', ghSku: 'GH47045387',      name: '1 1/2" Salt & Pepper',         myPrice: 108, listPrice: 152, margin: 28.9, url: 'https://www.ewingoutdoorsupply.com/94090774-1-1-2-salt-pepper-ton' },
+    { sku: '94095086', ghSku: 'GH47047543',      name: 'Gray Breeze',                  myPrice: 29,  listPrice: 54,  margin: 46.3, url: 'https://www.ewingoutdoorsupply.com/94095086-grey-breeze-ton' },
+    { sku: '94095066', ghSku: 'GH47047533',      name: 'Tan Breeze',                   myPrice: 23,  listPrice: 49,  margin: 53.1, url: 'https://www.ewingoutdoorsupply.com/94095066-tan-breeze-ton' },
+    { sku: '94090326', ghSku: 'GH47045163',      name: 'Red Breeze',                   myPrice: 42,  listPrice: 90,  margin: 53.3, url: 'https://www.ewingoutdoorsupply.com/94090326-red-breeze-ton' },
+    { sku: '94095565', ghSku: 'GH47047782.5',    name: '1 1/2" Colorado Rose',         myPrice: 80,  listPrice: 142, margin: 43.7, url: 'https://www.ewingoutdoorsupply.com/94095565-colorado-rose-1-1-2in-ton' },
+    { sku: '94090595', ghSku: 'GH47045297.5',    name: '1 1/2" Indian Sunset',         myPrice: 108, listPrice: 163, margin: 33.7, url: 'https://www.ewingoutdoorsupply.com/94090595-indian-sunset-1-1-2-ton' },
+    { sku: '94090044', ghSku: 'GH47045022',      name: '1 1/2" Gray River Rock',       myPrice: 68,  listPrice: 95,  margin: 28.4, url: 'https://www.ewingoutdoorsupply.com/94090044-1-1-2-gray-river-rock-ton' },
+    { sku: '94090144', ghSku: 'GH47045072',      name: '1 1/2" TT Blue Gray',          myPrice: 70,  listPrice: 119, margin: 41.2, url: 'https://www.ewingoutdoorsupply.com/94090144-1-1-2-tt-blue-gray-rock-ton' },
+  ];
+
+  function initCatalog() {
+    // Compute stats
+    const priced = CATALOG.filter(p => p.myPrice !== null);
+    const avgMargin = (priced.reduce((s, p) => s + p.margin, 0) / priced.length).toFixed(1);
+    const minP = Math.min(...priced.map(p => p.myPrice));
+    const maxP = Math.max(...priced.map(p => p.myPrice));
+    document.getElementById('cat-avg-margin').textContent = avgMargin + '%';
+    document.getElementById('cat-price-range').textContent = '$' + minP + '–$' + maxP;
+    filterCatalog();
+  }
+
+  function filterCatalog() {
+    const q = (document.getElementById('catalogSearch').value || '').toLowerCase();
+    const sort = document.getElementById('catalogSort').value;
+    let items = CATALOG.filter(p => p.name.toLowerCase().includes(q) || p.sku.includes(q) || p.ghSku.toLowerCase().includes(q));
+
+    if (sort === 'name')       items.sort((a, b) => a.name.localeCompare(b.name));
+    else if (sort === 'price-asc')  items.sort((a, b) => (a.myPrice || 0) - (b.myPrice || 0));
+    else if (sort === 'price-desc') items.sort((a, b) => (b.myPrice || 0) - (a.myPrice || 0));
+    else if (sort === 'margin')     items.sort((a, b) => (b.margin || 0) - (a.margin || 0));
+
+    const list = document.getElementById('catalogList');
+    if (!items.length) {
+      list.innerHTML = '<div class="catalog-no-results">No products match your search.</div>';
+      return;
+    }
+    list.innerHTML = items.map(p => `
+      <div class="catalog-item">
+        <div class="catalog-item-info">
+          <div class="catalog-item-name">${p.name}</div>
+          <div class="catalog-item-sku">${p.ghSku || p.sku || '—'}</div>
+        </div>
+        <div class="catalog-item-prices">
+          <div class="catalog-my-price">${p.myPrice !== null ? '$' + p.myPrice : '—'}</div>
+          ${p.listPrice ? `<div class="catalog-list-price">$${p.listPrice} list</div>` : ''}
+          ${p.margin !== null ? `<div class="catalog-margin">${p.margin}%</div>` : ''}
+        </div>
+        ${p.url ? `<a class="catalog-link" href="${p.url}" target="_blank" rel="noopener" title="View on Ewing">↗</a>` : ''}
+      </div>
+    `).join('');
+  }
+
+  // Init catalog on load
+  document.addEventListener('DOMContentLoaded', initCatalog);
 
 </script>
 </body>
