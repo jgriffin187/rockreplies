@@ -1134,6 +1134,23 @@
   }
   .receipt-meta [contenteditable="true"]:focus { outline: 1px solid var(--orange); background: #fff7ee; }
 
+  .receipt-paper [contenteditable="true"] {
+    cursor: text;
+    border-radius: 2px;
+  }
+  .receipt-paper [contenteditable="true"]:hover {
+    outline: 1px dashed rgba(245,130,31,0.5);
+  }
+  .receipt-paper [contenteditable="true"]:focus {
+    outline: 1px solid var(--orange);
+    background: #fff7ee;
+  }
+  .receipt-paper td[contenteditable="true"]:empty::before,
+  .receipt-paper .addr[contenteditable="true"]:empty::before {
+    content: attr(data-placeholder);
+    color: #b6c0d1;
+  }
+
   .receipt-billto { margin-bottom: 22px; }
   .receipt-billto .label {
     font-size: 10px;
@@ -2713,13 +2730,25 @@
   function openReceiptPreview(data) {
     if (!data.receiptNo) data.receiptNo = 'GH-' + Date.now().toString().slice(-8);
     if (!data.createdAt) data.createdAt = Date.now();
-    document.getElementById('receiptPaper').innerHTML = buildReceiptPaperHTML(data);
-    document.getElementById('receiptPaper').dataset.receiptNo = data.receiptNo;
+    const paper = document.getElementById('receiptPaper');
+    paper.innerHTML = buildReceiptPaperHTML(data);
+    paper.dataset.receiptNo = data.receiptNo;
+    paper.dataset.createdAt = String(data.createdAt);
     document.getElementById('receiptOverlay').classList.add('open');
     document.body.style.overflow = 'hidden';
-    saveReceiptRecord(data);
-    renderSavedReceipts();
   }
+
+  // Recalculate the grand total whenever an editable price cell changes
+  document.getElementById('receiptPaper').addEventListener('input', function(e) {
+    if (e.target.classList && e.target.classList.contains('receipt-price-cell')) {
+      let total = 0;
+      this.querySelectorAll('.receipt-price-cell').forEach(cell => {
+        total += parseFloat(cell.textContent.replace(/[^0-9.\-]/g, '')) || 0;
+      });
+      const totalCell = this.querySelector('.grand-total td:last-child');
+      if (totalCell) totalCell.textContent = '$' + total.toFixed(2);
+    }
+  });
 
   function closeReceiptPreview() {
     document.getElementById('receiptOverlay').classList.remove('open');
@@ -2780,7 +2809,7 @@
         <div class="delivery-header" onclick="toggleDeliveryBody('rcpt-${r.receiptNo}')">
           <div style="flex:1;min-width:0;">
             <div class="delivery-name">${escapeHtml(r.name)}</div>
-            <div class="delivery-date-row">📅 ${r.date ? formatDate(r.date) : '—'} · ${r.receiptNo}</div>
+            <div class="delivery-date-row">📅 ${r.date || '—'} · ${r.receiptNo}</div>
             <div class="delivery-total-row">Total: <span>$${(r.total||0).toFixed(2)}</span></div>
           </div>
           <span class="delivery-badge badge-delivered">Saved</span>
@@ -2825,16 +2854,17 @@
     const logoSrc = document.querySelector('header img').src;
     const total = data.items.reduce((sum, it) => sum + (parseFloat(it.price) || 0), 0);
     const receiptNo = data.receiptNo || ('GH-' + Date.now().toString().slice(-8));
-    const dateDisplay = data.date
+    const isIsoDate = /^\d{4}-\d{2}-\d{2}$/.test(data.date || '');
+    const dateDisplay = isIsoDate
       ? new Date(data.date + 'T12:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-      : '';
+      : (data.date || '');
 
     const rows = data.items.map(it => `
       <tr>
-        <td>${escapeHtml(it.desc)}</td>
-        <td>${it.unit === 'delivery' ? '' : (it.qty !== '' && it.qty !== undefined && it.qty !== null ? it.qty : '')}</td>
-        <td>${it.unit === 'delivery' ? '' : escapeHtml(it.unit || '')}</td>
-        <td>$${(parseFloat(it.price) || 0).toFixed(2)}</td>
+        <td contenteditable="true" data-placeholder="Description">${escapeHtml(it.desc)}</td>
+        <td contenteditable="true" data-placeholder="">${it.unit === 'delivery' ? '' : (it.qty !== '' && it.qty !== undefined && it.qty !== null ? it.qty : '')}</td>
+        <td contenteditable="true" data-placeholder="">${it.unit === 'delivery' ? '' : escapeHtml(it.unit || '')}</td>
+        <td contenteditable="true" class="receipt-price-cell" data-placeholder="$0.00">$${(parseFloat(it.price) || 0).toFixed(2)}</td>
       </tr>`).join('');
 
     return `
@@ -2857,8 +2887,8 @@
 
       <div class="receipt-billto">
         <div class="label">Bill To</div>
-        <div class="name">${escapeHtml(data.name || '')}</div>
-        ${data.address ? `<div class="addr">📍 ${escapeHtml(data.address)}</div>` : ''}
+        <div class="name" contenteditable="true" data-placeholder="Customer name">${escapeHtml(data.name || '')}</div>
+        <div class="addr" contenteditable="true" data-placeholder="📍 Delivery address">${data.address ? '📍 ' + escapeHtml(data.address) : ''}</div>
       </div>
 
       <table class="receipt-table">
@@ -2872,7 +2902,10 @@
         <tr class="grand-total"><td>Total Due</td><td>$${total.toFixed(2)}</td></tr>
       </table>
 
-      ${data.notes ? `<div class="receipt-billto" style="margin-top:14px;"><div class="label">Notes</div><div class="addr">${escapeHtml(data.notes)}</div></div>` : ''}
+      <div class="receipt-billto" style="margin-top:14px;">
+        <div class="label">Notes</div>
+        <div class="addr" id="receiptNotesText" contenteditable="true" data-placeholder="Add any notes…">${escapeHtml(data.notes || '')}</div>
+      </div>
 
       <div class="receipt-footer">
         Thank you for choosing <strong>Griffin Hauling, LLC</strong>!<br>
@@ -2921,12 +2954,41 @@
     return `GriffinHauling_Receipt_${name}_${date}.pdf`;
   }
 
+  function extractReceiptDataFromPaper() {
+    const paper = document.getElementById('receiptPaper');
+    const name = (paper.querySelector('.receipt-billto .name')?.textContent || '').trim();
+    const addrEl = paper.querySelector('.receipt-billto .addr');
+    const address = addrEl ? addrEl.textContent.replace('📍', '').trim() : '';
+    const dateEl = paper.querySelector('.receipt-meta b[contenteditable="true"]');
+    const date = dateEl ? dateEl.textContent.trim() : '';
+    const notesEl = paper.querySelector('#receiptNotesText');
+    const notes = notesEl ? notesEl.textContent.trim() : '';
+
+    const items = Array.from(paper.querySelectorAll('.receipt-table tbody tr')).map(tr => {
+      const tds = tr.querySelectorAll('td');
+      return {
+        desc:  tds[0].textContent.trim(),
+        qty:   tds[1].textContent.trim(),
+        unit:  tds[2].textContent.trim(),
+        price: parseFloat(tds[3].textContent.replace(/[^0-9.\-]/g, '')) || 0,
+      };
+    });
+
+    return {
+      receiptNo: paper.dataset.receiptNo,
+      createdAt: parseInt(paper.dataset.createdAt, 10) || Date.now(),
+      name, address, date, items, notes,
+    };
+  }
+
   async function downloadReceiptPDF() {
     showToast('Generating PDF...');
     try {
+      saveReceiptRecord(extractReceiptDataFromPaper());
+      renderSavedReceipts();
       const { pdf } = await buildReceiptPdfBlob();
       pdf.save(getReceiptFilename());
-      showToast('Receipt PDF downloaded!');
+      showToast('Receipt saved & PDF downloaded!');
     } catch (err) {
       console.error('PDF generation error:', err);
       showToast('Could not generate PDF.');
