@@ -2241,6 +2241,7 @@
   loadSettings();
   renderShapeUI();
   updateTemplates();
+  let receiptRowId = 0;
   initFirebase(); // connects to Firebase, then calls renderSchedule() and renderSaved()
   initReceiptBuilder();
 
@@ -2591,7 +2592,6 @@
   // ────────────────────────────────────────────────────────
   // RECEIPT GENERATOR
   // ────────────────────────────────────────────────────────
-  let receiptRowId = 0;
 
   function initReceiptBuilder() {
     const dateInput = document.getElementById('r-date');
