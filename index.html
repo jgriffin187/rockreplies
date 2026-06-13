@@ -1184,6 +1184,17 @@
     border-bottom: 1px solid #e7ebf2;
   }
   .receipt-table tbody tr:nth-child(even) { background: #f8fafc; }
+  .receipt-add-row td {
+    text-align: center;
+    padding: 8px;
+    cursor: pointer;
+    color: #f5821f;
+    font-weight: 700;
+    font-size: 12px;
+    border-bottom: 1px solid #e7ebf2;
+    background: #fff7ee;
+  }
+  .receipt-add-row td:hover { background: #ffeedd; }
 
   .receipt-totals { width: 100%; }
   .receipt-totals td { padding: 5px 10px; font-size: 13px; color: #4a5872; }
@@ -2895,7 +2906,7 @@
         <thead>
           <tr><th>Description</th><th>Qty</th><th>Unit</th><th>Amount</th></tr>
         </thead>
-        <tbody>${rows}</tbody>
+        <tbody>${rows}<tr data-html2canvas-ignore="true" class="receipt-add-row"><td colspan="4" onclick="addReceiptPaperRow(this)">+ Add Item</td></tr></tbody>
       </table>
 
       <table class="receipt-totals">
@@ -2954,6 +2965,19 @@
     return `GriffinHauling_Receipt_${name}_${date}.pdf`;
   }
 
+  function addReceiptPaperRow(el) {
+    const addRow = el.closest('tr');
+    const newRow = document.createElement('tr');
+    newRow.innerHTML = `
+      <td contenteditable="true" data-placeholder="Description"></td>
+      <td contenteditable="true" data-placeholder=""></td>
+      <td contenteditable="true" data-placeholder=""></td>
+      <td contenteditable="true" class="receipt-price-cell" data-placeholder="$0.00">$0.00</td>
+    `;
+    addRow.parentNode.insertBefore(newRow, addRow);
+    newRow.querySelector('td').focus();
+  }
+
   function extractReceiptDataFromPaper() {
     const paper = document.getElementById('receiptPaper');
     const name = (paper.querySelector('.receipt-billto .name')?.textContent || '').trim();
@@ -2966,13 +2990,14 @@
 
     const items = Array.from(paper.querySelectorAll('.receipt-table tbody tr')).map(tr => {
       const tds = tr.querySelectorAll('td');
+      if (tds.length < 4) return null;
       return {
         desc:  tds[0].textContent.trim(),
         qty:   tds[1].textContent.trim(),
         unit:  tds[2].textContent.trim(),
         price: parseFloat(tds[3].textContent.replace(/[^0-9.\-]/g, '')) || 0,
       };
-    });
+    }).filter(Boolean);
 
     return {
       receiptNo: paper.dataset.receiptNo,
