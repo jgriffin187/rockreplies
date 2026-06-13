@@ -1722,7 +1722,6 @@
       <span class="modal-title">Receipt Preview</span>
       <div class="receipt-toolbar-actions">
         <button class="btn btn-copy" onclick="downloadReceiptPDF()">⬇️ Save as PDF</button>
-        <button class="btn btn-edit" onclick="emailReceiptToJosh()">✉️ Email to Josh</button>
         <button class="modal-close" onclick="closeReceiptPreview()">✕</button>
       </div>
     </div>
@@ -1853,15 +1852,6 @@
   // ── Schedule state (declared early so all functions can access) ──
   const SCHED_KEY = 'griffin_schedule';
   const RECEIPTS_KEY = 'griffin_receipts';
-
-  // ── EmailJS config (https://www.emailjs.com — free tier works) ──
-  // Create an account, an Email Service, and a Template (with params:
-  // to_email, subject, message, pdf_base64, pdf_filename), then fill these in.
-  // Until configured, "Email Receipt" will save the PDF locally and let you
-  // know automatic sending isn't set up yet.
-  const EMAILJS_PUBLIC_KEY  = 'YOUR_EMAILJS_PUBLIC_KEY';
-  const EMAILJS_SERVICE_ID  = 'YOUR_EMAILJS_SERVICE_ID';
-  const EMAILJS_TEMPLATE_ID = 'YOUR_EMAILJS_TEMPLATE_ID';
   let showingPast = false;
   let showingDelivered = false;
   let currentMaterial = 'rock';
@@ -2899,12 +2889,6 @@
     }
   }
 
-  async function ensureEmailJsLib() {
-    if (!window.emailjs) {
-      await loadScript('https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js');
-    }
-  }
-
   function loadScript(src) {
     return new Promise((resolve, reject) => {
       const s = document.createElement('script');
@@ -2936,10 +2920,6 @@
     return `GriffinHauling_Receipt_${name}_${date}.pdf`;
   }
 
-  function getCurrentReceiptNo() {
-    return document.getElementById('receiptPaper').dataset.receiptNo || null;
-  }
-
   async function downloadReceiptPDF() {
     showToast('Generating PDF...');
     try {
@@ -2949,56 +2929,6 @@
     } catch (err) {
       console.error('PDF generation error:', err);
       showToast('Could not generate PDF.');
-    }
-  }
-
-  async function emailReceiptToJosh() {
-    showToast('Generating PDF...');
-    try {
-      const { pdf } = await buildReceiptPdfBlob();
-      const dataUrl = pdf.output('datauristring');
-      const base64 = dataUrl.split(',')[1];
-      const receiptNo = getCurrentReceiptNo();
-
-      const nameEl = document.querySelector('#receiptPaper .receipt-billto .name');
-      const dateEl = document.querySelector('#receiptPaper .receipt-meta b[contenteditable="true"]');
-      const totalEl = document.querySelector('#receiptPaper .grand-total td:last-child');
-      const customer = nameEl ? nameEl.textContent.trim() : '';
-      const date = dateEl ? dateEl.textContent.trim() : '';
-      const total = totalEl ? totalEl.textContent.trim() : '';
-      const filename = getReceiptFilename();
-
-      const subject = `Receipt - ${customer} - ${date}`;
-      const message =
-        `Receipt generated for ${customer} (${date}).\n` +
-        `Total: ${total}\n\n` +
-        `Receipt #: ${receiptNo || ''}`;
-
-      const isConfigured =
-        EMAILJS_PUBLIC_KEY  !== 'YOUR_EMAILJS_PUBLIC_KEY' &&
-        EMAILJS_SERVICE_ID  !== 'YOUR_EMAILJS_SERVICE_ID' &&
-        EMAILJS_TEMPLATE_ID !== 'YOUR_EMAILJS_TEMPLATE_ID';
-
-      if (!isConfigured) {
-        pdf.save(filename);
-        showToast('Email sending isn\'t configured yet — PDF saved & downloaded instead.');
-        return;
-      }
-
-      await ensureEmailJsLib();
-      window.emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
-      await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-        to_email: 'josh@joshgriffin.com',
-        subject,
-        message,
-        pdf_base64: base64,
-        pdf_filename: filename,
-      });
-
-      showToast('Receipt emailed to josh@joshgriffin.com!');
-    } catch (err) {
-      console.error('Email receipt error:', err);
-      showToast('Could not send email — check EmailJS setup.');
     }
   }
 
