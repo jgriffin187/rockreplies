@@ -2625,7 +2625,10 @@
     row.innerHTML = `
       <input type="text" class="form-input" placeholder="e.g. River Rock 1-3 in" value="${escapeAttr(desc)}" oninput="calcReceiptTotal()">
       <input type="number" class="form-input" placeholder="1" min="0" step="0.25" value="${escapeAttr(qty)}" oninput="calcReceiptTotal()">
-      <input type="text" class="form-input" placeholder="tons" value="${escapeAttr(unit)}">
+      <select class="form-select" style="padding:8px 8px;font-size:13px;">
+        <option value="tons" ${unit === 'cu yards' ? '' : 'selected'}>tons</option>
+        <option value="cu yards" ${unit === 'cu yards' ? 'selected' : ''}>cu yards</option>
+      </select>
       <input type="number" class="form-input" placeholder="0.00" min="0" step="0.01" value="${escapeAttr(price)}" oninput="calcReceiptTotal()">
       <button class="btn-remove-item" onclick="removeReceiptItem('${id}')">✕</button>
     `;
@@ -2649,7 +2652,7 @@
       const inputs = row.querySelectorAll('input');
       const desc  = inputs[0].value.trim();
       const qty   = parseFloat(inputs[1].value) || 0;
-      const unit  = inputs[2].value.trim();
+      const unit  = row.querySelector('select').value;
       const price = parseFloat(inputs[3].value) || 0;
       if (desc || price) items.push({ desc, qty, unit, price });
     });
@@ -2696,7 +2699,7 @@
       items.push({
         desc:  d.materialName,
         qty:   parseFloat(d.qty) || 0,
-        unit:  d.unit || '',
+        unit:  /yd|yard/i.test(d.unit || '') ? 'cu yards' : 'tons',
         price: d.matPrice || 0,
       });
     }
@@ -2760,7 +2763,6 @@
       items: data.items || [],
       notes: data.notes || '',
       total,
-      pdfDataUrl: (idx > -1 ? all[idx].pdfDataUrl : null) || null,
     };
     if (idx > -1) all[idx] = record; else all.unshift(record);
     // Keep the most recent 100 receipts to avoid bloating localStorage
@@ -2769,20 +2771,6 @@
       localStorage.setItem(RECEIPTS_KEY, JSON.stringify(trimmed));
     } catch (err) {
       console.error('Could not save receipt record:', err);
-    }
-  }
-
-  function updateSavedReceiptPdf(receiptNo, pdfDataUrl) {
-    if (!storageAvailable()) return;
-    const all = loadSavedReceipts();
-    const idx = all.findIndex(r => r.receiptNo === receiptNo);
-    if (idx > -1) {
-      all[idx].pdfDataUrl = pdfDataUrl;
-      try {
-        localStorage.setItem(RECEIPTS_KEY, JSON.stringify(all));
-      } catch (err) {
-        console.error('Could not store receipt PDF:', err);
-      }
     }
   }
 
@@ -2804,12 +2792,11 @@
             <div class="delivery-date-row">📅 ${r.date ? formatDate(r.date) : '—'} · ${r.receiptNo}</div>
             <div class="delivery-total-row">Total: <span>$${(r.total||0).toFixed(2)}</span></div>
           </div>
-          <span class="delivery-badge badge-delivered">${r.pdfDataUrl ? 'Saved' : 'Generated'}</span>
+          <span class="delivery-badge badge-delivered">Saved</span>
         </div>
         <div class="delivery-body" id="dbody-rcpt-${r.receiptNo}">
           <div class="delivery-actions">
             <button class="btn-receipt" onclick="reopenSavedReceipt('${r.receiptNo}')">👁️ View</button>
-            ${r.pdfDataUrl ? `<button class="btn-receipt" onclick="downloadSavedReceiptPdf('${r.receiptNo}')">⬇️ PDF</button>` : ''}
             <button class="btn-danger" onclick="deleteSavedReceipt('${r.receiptNo}')">Delete</button>
           </div>
         </div>
@@ -2829,18 +2816,6 @@
       items: record.items,
       notes: record.notes,
     });
-  }
-
-  function downloadSavedReceiptPdf(receiptNo) {
-    const all = loadSavedReceipts();
-    const record = all.find(r => r.receiptNo === receiptNo);
-    if (!record || !record.pdfDataUrl) { showToast('No saved PDF for this receipt.'); return; }
-    const a = document.createElement('a');
-    a.href = record.pdfDataUrl;
-    a.download = `GriffinHauling_Receipt_${(record.name||'receipt').replace(/[^a-z0-9]+/gi,'_')}_${record.date||''}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
   }
 
   function deleteSavedReceipt(receiptNo) {
@@ -2969,12 +2944,8 @@
     showToast('Generating PDF...');
     try {
       const { pdf } = await buildReceiptPdfBlob();
-      const dataUrl = pdf.output('datauristring');
-      const receiptNo = getCurrentReceiptNo();
-      if (receiptNo) updateSavedReceiptPdf(receiptNo, dataUrl);
-      renderSavedReceipts();
       pdf.save(getReceiptFilename());
-      showToast('Receipt PDF downloaded & saved!');
+      showToast('Receipt PDF downloaded!');
     } catch (err) {
       console.error('PDF generation error:', err);
       showToast('Could not generate PDF.');
@@ -2988,8 +2959,6 @@
       const dataUrl = pdf.output('datauristring');
       const base64 = dataUrl.split(',')[1];
       const receiptNo = getCurrentReceiptNo();
-      if (receiptNo) updateSavedReceiptPdf(receiptNo, dataUrl);
-      renderSavedReceipts();
 
       const nameEl = document.querySelector('#receiptPaper .receipt-billto .name');
       const dateEl = document.querySelector('#receiptPaper .receipt-meta b[contenteditable="true"]');
