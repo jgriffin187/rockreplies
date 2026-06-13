@@ -2616,8 +2616,9 @@
       <input type="text" class="form-input" placeholder="e.g. River Rock 1-3 in" value="${escapeAttr(desc)}" oninput="calcReceiptTotal()">
       <input type="number" class="form-input" placeholder="1" min="0" step="0.25" value="${escapeAttr(qty)}" oninput="calcReceiptTotal()">
       <select class="form-select" style="padding:8px 8px;font-size:13px;">
-        <option value="tons" ${unit === 'cu yards' ? '' : 'selected'}>tons</option>
-        <option value="cu yards" ${unit === 'cu yards' ? 'selected' : ''}>cu yards</option>
+        <option value="tons" ${unit === 'cu. yards' || unit === 'delivery' ? '' : 'selected'}>tons</option>
+        <option value="cu. yards" ${unit === 'cu. yards' ? 'selected' : ''}>cu. yards</option>
+        <option value="delivery" ${unit === 'delivery' ? 'selected' : ''}>delivery</option>
       </select>
       <input type="number" class="form-input" placeholder="0.00" min="0" step="0.01" value="${escapeAttr(price)}" oninput="calcReceiptTotal()">
       <button class="btn-remove-item" onclick="removeReceiptItem('${id}')">✕</button>
@@ -2689,12 +2690,12 @@
       items.push({
         desc:  d.materialName,
         qty:   parseFloat(d.qty) || 0,
-        unit:  /yd|yard/i.test(d.unit || '') ? 'cu yards' : 'tons',
+        unit:  /yd|yard/i.test(d.unit || '') ? 'cu. yards' : 'tons',
         price: d.matPrice || 0,
       });
     }
     if (d.delPrice) {
-      items.push({ desc: 'Delivery Fee', qty: '', unit: '', price: d.delPrice || 0 });
+      items.push({ desc: 'Delivery Fee', qty: '', unit: 'delivery', price: d.delPrice || 0 });
     }
     if (items.length === 0) {
       items.push({ desc: 'Rock / Mulch Delivery', qty: '', unit: '', price: d.total || 0 });
@@ -2831,8 +2832,8 @@
     const rows = data.items.map(it => `
       <tr>
         <td>${escapeHtml(it.desc)}</td>
-        <td>${it.qty !== '' && it.qty !== undefined && it.qty !== null ? it.qty : ''}</td>
-        <td>${escapeHtml(it.unit || '')}</td>
+        <td>${it.unit === 'delivery' ? '' : (it.qty !== '' && it.qty !== undefined && it.qty !== null ? it.qty : '')}</td>
+        <td>${it.unit === 'delivery' ? '' : escapeHtml(it.unit || '')}</td>
         <td>$${(parseFloat(it.price) || 0).toFixed(2)}</td>
       </tr>`).join('');
 
