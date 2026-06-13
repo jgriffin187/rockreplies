@@ -845,136 +845,227 @@
   .empty-state .empty-icon { font-size: 36px; margin-bottom: 10px; }
   .empty-state p { font-size: 13px; line-height: 1.6; }
 
-  /* ── Catalog tab ── */
-  .catalog-search {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 14px;
+  /* ── Receipt builder (form tab) ── */
+  .receipt-items { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .receipt-item-row {
+    display: grid;
+    grid-template-columns: 1fr 56px 64px 78px 28px;
+    gap: 6px;
+    align-items: center;
   }
-  .catalog-search input {
-    flex: 1;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    font-size: 13px;
-    padding: 8px 12px;
-    transition: border-color 0.15s;
+  .receipt-item-row .form-input { padding: 8px 8px; font-size: 13px; }
+  .receipt-item-total {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--orange-hi);
+    text-align: right;
+    white-space: nowrap;
   }
-  .catalog-search input:focus { outline: none; border-color: var(--orange); }
-  .catalog-search input::placeholder { color: var(--muted); }
-
-  .catalog-sort {
-    background: var(--surface2);
-    border: 1px solid var(--border);
+  .btn-remove-item {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: #f87171;
     border-radius: var(--radius-sm);
-    color: var(--text);
+    width: 28px; height: 32px;
+    font-size: 14px; font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .btn-remove-item:hover { background: rgba(239,68,68,0.2); }
+  .btn-add-item {
+    background: var(--surface2);
+    border: 1px dashed var(--border-hi);
+    color: var(--muted);
+    border-radius: var(--radius-sm);
+    padding: 8px;
     font-family: 'Inter', sans-serif;
     font-size: 12px;
-    padding: 8px 10px;
+    font-weight: 600;
     cursor: pointer;
-    appearance: none;
-    -webkit-appearance: none;
+    width: 100%;
+    transition: all 0.15s;
   }
-  .catalog-sort:focus { outline: none; border-color: var(--orange); }
+  .btn-add-item:hover { color: var(--text); border-color: var(--orange); }
 
-  .catalog-stats {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-  .catalog-stat {
-    flex: 1;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 10px 12px;
-    text-align: center;
-  }
-  .catalog-stat-val {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--orange-hi);
-    font-family: 'Sora', sans-serif;
-  }
-  .catalog-stat-lbl {
+  .receipt-col-labels {
+    display: grid;
+    grid-template-columns: 1fr 56px 64px 78px 28px;
+    gap: 6px;
     font-size: 10px;
-    color: var(--muted);
+    font-weight: 700;
+    letter-spacing: 0.6px;
     text-transform: uppercase;
-    letter-spacing: 0.8px;
-    margin-top: 2px;
+    color: var(--muted);
+    padding: 0 2px;
   }
 
-  .catalog-item {
+  .btn-receipt {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border: 1px solid rgba(245,130,31,0.35);
+    border-radius: var(--radius-sm);
+    background: rgba(245,130,31,0.12);
+    color: var(--orange-hi);
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.15s;
+  }
+  .btn-receipt:hover { background: rgba(245,130,31,0.22); }
+
+  /* ── Receipt preview / PDF document ── */
+  .receipt-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 600;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    backdrop-filter: blur(4px);
+  }
+  .receipt-overlay.open { display: flex; }
+
+  .receipt-shell {
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 12px 14px;
+    border: 1px solid var(--border-hi);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 680px;
+    max-height: 94vh;
+    overflow-y: auto;
+    animation: slideUp 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  .receipt-toolbar {
     display: flex;
     align-items: center;
-    gap: 12px;
-    transition: border-color 0.15s, box-shadow 0.15s;
-    margin-bottom: 8px;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    z-index: 2;
   }
-  .catalog-item:hover {
-    border-color: var(--border-hi);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+
+  .receipt-toolbar-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .receipt-paper-wrap { padding: 16px; }
+
+  /* The actual printable/exportable receipt — white paper look */
+  .receipt-paper {
+    background: #ffffff;
+    color: #1a2233;
+    border-radius: 6px;
+    padding: 36px 32px;
+    font-family: 'Inter', sans-serif;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.35);
   }
-  .catalog-item-info { flex: 1; min-width: 0; }
-  .catalog-item-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .catalog-item-sku {
-    font-size: 10px;
-    color: var(--muted);
-    margin-top: 2px;
-    font-family: monospace;
-    letter-spacing: 0.3px;
-  }
-  .catalog-item-prices {
+
+  .receipt-head {
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    border-bottom: 3px solid var(--orange);
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+  }
+  .receipt-head img { height: 52px; width: auto; display: block; }
+  .receipt-brand-info { text-align: right; font-size: 11px; line-height: 1.6; color: #5a6b85; }
+  .receipt-brand-info strong { color: #1a2233; font-size: 13px; font-family: 'Sora', sans-serif; }
+
+  .receipt-title-row {
+    display: flex;
+    justify-content: space-between;
     align-items: flex-end;
-    gap: 3px;
-    flex-shrink: 0;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+    gap: 10px;
   }
-  .catalog-my-price {
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--orange-hi);
+  .receipt-title-row h2 {
+    font-family: 'Sora', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #1a2233;
   }
-  .catalog-list-price {
-    font-size: 11px;
-    color: var(--muted);
-    text-decoration: line-through;
+  .receipt-meta { text-align: right; font-size: 12px; color: #5a6b85; line-height: 1.7; }
+  .receipt-meta b { color: #1a2233; }
+  .receipt-meta [contenteditable="true"] {
+    border-bottom: 1px dashed var(--orange);
+    padding: 0 2px;
+    border-radius: 2px;
+    cursor: text;
   }
-  .catalog-margin {
+  .receipt-meta [contenteditable="true"]:focus { outline: 1px solid var(--orange); background: #fff7ee; }
+
+  .receipt-billto { margin-bottom: 22px; }
+  .receipt-billto .label {
     font-size: 10px;
-    font-weight: 600;
-    color: var(--green);
-    background: rgba(34,197,94,0.12);
-    border-radius: 4px;
-    padding: 2px 6px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #f5821f;
+    margin-bottom: 6px;
   }
-  .catalog-link {
-    color: var(--muted);
-    text-decoration: none;
-    font-size: 16px;
-    flex-shrink: 0;
-    transition: color 0.15s;
+  .receipt-billto .name { font-size: 15px; font-weight: 700; color: #1a2233; font-family: 'Sora', sans-serif; }
+  .receipt-billto .addr { font-size: 13px; color: #4a5872; margin-top: 2px; }
+
+  .receipt-table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+  .receipt-table thead th {
+    background: #15203a;
+    color: #f3f6fb;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-align: left;
+    padding: 9px 10px;
   }
-  .catalog-link:hover { color: var(--orange); }
-  .catalog-no-results {
-    text-align: center;
-    padding: 32px;
-    color: var(--muted);
+  .receipt-table thead th:last-child,
+  .receipt-table tbody td:last-child,
+  .receipt-table tfoot td:last-child { text-align: right; }
+  .receipt-table tbody td {
     font-size: 13px;
+    color: #2a3650;
+    padding: 9px 10px;
+    border-bottom: 1px solid #e7ebf2;
+  }
+  .receipt-table tbody tr:nth-child(even) { background: #f8fafc; }
+
+  .receipt-totals { width: 100%; }
+  .receipt-totals td { padding: 5px 10px; font-size: 13px; color: #4a5872; }
+  .receipt-totals tr.grand-total td {
+    font-family: 'Sora', sans-serif;
+    font-size: 17px;
+    font-weight: 800;
+    color: #1a2233;
+    border-top: 2px solid #f5821f;
+    padding-top: 10px;
+  }
+
+  .receipt-footer {
+    margin-top: 28px;
+    padding-top: 16px;
+    border-top: 1px solid #e7ebf2;
+    font-size: 11px;
+    color: #8896ad;
+    text-align: center;
+    line-height: 1.7;
+  }
+  .receipt-footer strong { color: #f5821f; }
+
+  @media print {
+    body * { visibility: hidden; }
+    .receipt-paper, .receipt-paper * { visibility: visible; }
+    .receipt-paper {
+      position: absolute; left: 0; top: 0; width: 100%;
+      box-shadow: none; border-radius: 0; padding: 24px;
+    }
   }
 </style>
 </head>
@@ -1009,7 +1100,7 @@
   <button class="tab" onclick="switchTab('compose', this)">✏️ Custom</button>
   <button class="tab" onclick="switchTab('estimator', this)">📐 Estimator</button>
   <button class="tab" onclick="switchTab('schedule', this)">📅 Schedule</button>
-  <button class="tab" onclick="switchTab('catalog', this)">📋 Catalog</button>
+  <button class="tab" onclick="switchTab('receipt', this)">🧾 Receipt</button>
 </div>
 
 <div class="main">
@@ -1421,42 +1512,62 @@
     <div class="delivery-list" id="deliveryList"></div>
   </div>
 
-  <!-- CATALOG -->
-  <div class="panel" id="panel-catalog">
-    <div class="category-label">Product catalog</div>
-
-    <div class="catalog-stats">
-      <div class="catalog-stat">
-        <div class="catalog-stat-val">24</div>
-        <div class="catalog-stat-lbl">Products</div>
-      </div>
-      <div class="catalog-stat">
-        <div class="catalog-stat-val" id="cat-avg-margin">—</div>
-        <div class="catalog-stat-lbl">Avg Margin</div>
-      </div>
-      <div class="catalog-stat">
-        <div class="catalog-stat-val" id="cat-price-range">—</div>
-        <div class="catalog-stat-lbl">Price Range</div>
-      </div>
+  <!-- RECEIPT BUILDER -->
+  <div class="panel" id="panel-receipt">
+    <div class="form-group">
+      <label class="form-label">Date</label>
+      <input type="date" class="form-input" id="r-date" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Customer Name</label>
+      <input type="text" class="form-input" id="r-name" placeholder="Jane Smith" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Delivery Address</label>
+      <input type="text" class="form-input" id="r-address" placeholder="123 Main St, Erie CO" />
     </div>
 
-    <div class="catalog-search">
-      <input type="text" id="catalogSearch" placeholder="Search products…" oninput="filterCatalog()" />
-      <select class="catalog-sort" id="catalogSort" onchange="filterCatalog()">
-        <option value="name">A–Z</option>
-        <option value="price-asc">$ Low</option>
-        <option value="price-desc">$ High</option>
-        <option value="margin">Margin</option>
-      </select>
+    <div class="form-group">
+      <label class="form-label">Items</label>
+      <div class="receipt-col-labels">
+        <span>Description</span><span>Qty</span><span>Unit</span><span>Price</span><span></span>
+      </div>
+      <div class="receipt-items" id="receiptItems"></div>
+      <button class="btn-add-item" onclick="addReceiptItemRow()">+ Add Item</button>
     </div>
 
-    <div id="catalogList"></div>
+    <div class="form-group">
+      <label class="form-label">Notes (optional)</label>
+      <textarea class="form-input" id="r-notes" rows="2" placeholder="e.g. Paid via Venmo, gate code, etc." style="resize:vertical;"></textarea>
+    </div>
+
+    <div class="form-total" id="r-total">$0.00</div>
+
+    <button class="btn-primary" style="width:100%;margin-top:14px;" onclick="generateReceiptFromForm()">🧾 Generate Receipt</button>
   </div>
 
 </div><!-- end main -->
 
+<!-- Receipt Preview / PDF Overlay -->
+<div class="receipt-overlay" id="receiptOverlay">
+  <div class="receipt-shell">
+    <div class="receipt-toolbar">
+      <span class="modal-title">Receipt Preview</span>
+      <div class="receipt-toolbar-actions">
+        <button class="btn btn-copy" onclick="downloadReceiptPDF()">⬇️ Save as PDF</button>
+        <button class="btn btn-edit" onclick="emailReceiptToJosh()">✉️ Email to Josh</button>
+        <button class="modal-close" onclick="closeReceiptPreview()">✕</button>
+      </div>
+    </div>
+    <div class="receipt-paper-wrap">
+      <div class="receipt-paper" id="receiptPaper"></div>
+    </div>
+  </div>
+</div>
+
 <!-- Add/Edit Delivery Modal -->
 <div class="modal-overlay" id="deliveryModal">
+
   <div class="modal">
     <div class="modal-header">
       <span class="modal-title" id="modalTitle">New Delivery</span>
@@ -1968,6 +2079,7 @@
   renderShapeUI();
   updateTemplates();
   initFirebase(); // connects to Firebase, then calls renderSchedule() and renderSaved()
+  initReceiptBuilder();
 
   // Persist settings whenever they change
   document.getElementById('priceInput').addEventListener('input', saveSettings);
@@ -2287,6 +2399,7 @@
             <button class="btn-status ${d.status==='delivered'?'active':''}"  onclick="updateStatus('${d.id}','delivered')">Delivered</button>
             <button class="btn-status ${d.status==='cancelled'?'active':''}"  onclick="updateStatus('${d.id}','cancelled')">Cancelled</button>
             <button class="btn btn-edit" style="margin-left:auto;" onclick="openModal('${d.id}')">Edit</button>
+            <button class="btn-receipt" onclick="generateReceiptFromDelivery('${d.id}')">🧾 Receipt</button>
             <button class="btn-danger" onclick="deleteDelivery('${d.id}')">Delete</button>
           </div>
         </div>
@@ -2312,7 +2425,277 @@
     if (e.target === this) closeModal();
   });
 
-  if ('serviceWorker' in navigator) {
+  // ────────────────────────────────────────────────────────
+  // RECEIPT GENERATOR
+  // ────────────────────────────────────────────────────────
+  let receiptRowId = 0;
+
+  function initReceiptBuilder() {
+    const dateInput = document.getElementById('r-date');
+    if (dateInput && !dateInput.value) {
+      dateInput.value = new Date().toISOString().slice(0, 10);
+    }
+    if (document.getElementById('receiptItems').children.length === 0) {
+      addReceiptItemRow();
+    }
+  }
+
+  function addReceiptItemRow(desc = '', qty = '', unit = 'tons', price = '') {
+    const id = 'ritem-' + (++receiptRowId);
+    const row = document.createElement('div');
+    row.className = 'receipt-item-row';
+    row.id = id;
+    row.innerHTML = `
+      <input type="text" class="form-input" placeholder="e.g. River Rock 1-3 in" value="${escapeAttr(desc)}" oninput="calcReceiptTotal()">
+      <input type="number" class="form-input" placeholder="1" min="0" step="0.25" value="${escapeAttr(qty)}" oninput="calcReceiptTotal()">
+      <input type="text" class="form-input" placeholder="tons" value="${escapeAttr(unit)}">
+      <input type="number" class="form-input" placeholder="0.00" min="0" step="0.01" value="${escapeAttr(price)}" oninput="calcReceiptTotal()">
+      <button class="btn-remove-item" onclick="removeReceiptItem('${id}')">✕</button>
+    `;
+    document.getElementById('receiptItems').appendChild(row);
+    calcReceiptTotal();
+  }
+
+  function removeReceiptItem(id) {
+    const row = document.getElementById(id);
+    if (row) row.remove();
+    if (document.getElementById('receiptItems').children.length === 0) {
+      addReceiptItemRow();
+    }
+    calcReceiptTotal();
+  }
+
+  function getReceiptItemsFromForm() {
+    const rows = document.querySelectorAll('#receiptItems .receipt-item-row');
+    const items = [];
+    rows.forEach(row => {
+      const inputs = row.querySelectorAll('input');
+      const desc  = inputs[0].value.trim();
+      const qty   = parseFloat(inputs[1].value) || 0;
+      const unit  = inputs[2].value.trim();
+      const price = parseFloat(inputs[3].value) || 0;
+      if (desc || price) items.push({ desc, qty, unit, price });
+    });
+    return items;
+  }
+
+  function calcReceiptTotal() {
+    const items = getReceiptItemsFromForm();
+    const total = items.reduce((sum, it) => sum + (it.price || 0), 0);
+    document.getElementById('r-total').textContent = '$' + total.toFixed(2);
+    return total;
+  }
+
+  function escapeAttr(v) {
+    return String(v).replace(/"/g, '&quot;');
+  }
+
+  function escapeHtml(str) {
+    return String(str || '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
+  function generateReceiptFromForm() {
+    const name    = document.getElementById('r-name').value.trim();
+    const address = document.getElementById('r-address').value.trim();
+    const date    = document.getElementById('r-date').value;
+    const notes   = document.getElementById('r-notes').value.trim();
+    const items   = getReceiptItemsFromForm();
+
+    if (!name) { showToast('Please enter a customer name.'); return; }
+    if (items.length === 0) { showToast('Please add at least one item.'); return; }
+
+    openReceiptPreview({ name, address, date, items, notes });
+  }
+
+  async function generateReceiptFromDelivery(id) {
+    const deliveries = await loadDeliveries();
+    const d = deliveries.find(x => x.id === id);
+    if (!d) { showToast('Could not find that delivery.'); return; }
+
+    const items = [];
+    if (d.materialName) {
+      items.push({
+        desc:  d.materialName,
+        qty:   parseFloat(d.qty) || 0,
+        unit:  d.unit || '',
+        price: d.matPrice || 0,
+      });
+    }
+    if (d.delPrice) {
+      items.push({ desc: 'Delivery Fee', qty: '', unit: '', price: d.delPrice || 0 });
+    }
+    if (items.length === 0) {
+      items.push({ desc: 'Rock / Mulch Delivery', qty: '', unit: '', price: d.total || 0 });
+    }
+
+    openReceiptPreview({
+      name: d.name,
+      address: d.address,
+      date: d.date || new Date().toISOString().slice(0, 10),
+      items,
+      notes: d.notes || '',
+    });
+  }
+
+  function openReceiptPreview(data) {
+    document.getElementById('receiptPaper').innerHTML = buildReceiptPaperHTML(data);
+    document.getElementById('receiptOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeReceiptPreview() {
+    document.getElementById('receiptOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.getElementById('receiptOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeReceiptPreview();
+  });
+
+  function buildReceiptPaperHTML(data) {
+    const logoSrc = document.querySelector('header img').src;
+    const total = data.items.reduce((sum, it) => sum + (parseFloat(it.price) || 0), 0);
+    const receiptNo = 'GH-' + Date.now().toString().slice(-8);
+    const dateDisplay = data.date
+      ? new Date(data.date + 'T12:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+      : '';
+
+    const rows = data.items.map(it => `
+      <tr>
+        <td>${escapeHtml(it.desc)}</td>
+        <td>${it.qty !== '' && it.qty !== undefined && it.qty !== null ? it.qty : ''}</td>
+        <td>${escapeHtml(it.unit || '')}</td>
+        <td>$${(parseFloat(it.price) || 0).toFixed(2)}</td>
+      </tr>`).join('');
+
+    return `
+      <div class="receipt-head">
+        <img src="${logoSrc}" alt="Griffin Hauling">
+        <div class="receipt-brand-info">
+          <strong>Griffin Hauling</strong><br>
+          Landscape Rock &amp; Mulch Delivery<br>
+          josh@joshgriffin.com
+        </div>
+      </div>
+
+      <div class="receipt-title-row">
+        <h2>RECEIPT</h2>
+        <div class="receipt-meta">
+          Receipt #: <b>${receiptNo}</b><br>
+          Date: <b contenteditable="true">${dateDisplay}</b>
+        </div>
+      </div>
+
+      <div class="receipt-billto">
+        <div class="label">Bill To</div>
+        <div class="name">${escapeHtml(data.name || '')}</div>
+        ${data.address ? `<div class="addr">📍 ${escapeHtml(data.address)}</div>` : ''}
+      </div>
+
+      <table class="receipt-table">
+        <thead>
+          <tr><th>Description</th><th>Qty</th><th>Unit</th><th>Amount</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+
+      <table class="receipt-totals">
+        <tr class="grand-total"><td>Total Due</td><td>$${total.toFixed(2)}</td></tr>
+      </table>
+
+      ${data.notes ? `<div class="receipt-billto" style="margin-top:14px;"><div class="label">Notes</div><div class="addr">${escapeHtml(data.notes)}</div></div>` : ''}
+
+      <div class="receipt-footer">
+        Thank you for choosing <strong>Griffin Hauling</strong>!<br>
+        Questions about this receipt? Reach out at josh@joshgriffin.com
+      </div>
+    `;
+  }
+
+  async function ensurePdfLibs() {
+    if (!window.html2canvas) {
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    }
+    if (!window.jspdf) {
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    }
+  }
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  async function buildReceiptPdfBlob() {
+    await ensurePdfLibs();
+    const paper = document.getElementById('receiptPaper');
+    const canvas = await html2canvas(paper, { scale: 2, backgroundColor: '#ffffff' });
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'pt', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+    return { pdf, imgData };
+  }
+
+  function getReceiptFilename() {
+    const nameEl = document.querySelector('#receiptPaper .receipt-billto .name');
+    const name = (nameEl ? nameEl.textContent.trim() : 'receipt').replace(/[^a-z0-9]+/gi, '_');
+    const date = new Date().toISOString().slice(0, 10);
+    return `GriffinHauling_Receipt_${name}_${date}.pdf`;
+  }
+
+  async function downloadReceiptPDF() {
+    showToast('Generating PDF...');
+    try {
+      const { pdf } = await buildReceiptPdfBlob();
+      pdf.save(getReceiptFilename());
+      showToast('Receipt PDF downloaded!');
+    } catch (err) {
+      console.error('PDF generation error:', err);
+      showToast('Could not generate PDF.');
+    }
+  }
+
+  async function emailReceiptToJosh() {
+    showToast('Generating PDF...');
+    try {
+      const { pdf } = await buildReceiptPdfBlob();
+      pdf.save(getReceiptFilename());
+
+      const nameEl = document.querySelector('#receiptPaper .receipt-billto .name');
+      const dateEl = document.querySelector('#receiptPaper .receipt-meta b[contenteditable="true"]');
+      const totalEl = document.querySelector('#receiptPaper .grand-total td:last-child');
+      const customer = nameEl ? nameEl.textContent.trim() : '';
+      const date = dateEl ? dateEl.textContent.trim() : '';
+      const total = totalEl ? totalEl.textContent.trim() : '';
+
+      const subject = `Receipt - ${customer} - ${date}`;
+      const body =
+        `Receipt generated for ${customer} (${date}).\n` +
+        `Total: ${total}\n\n` +
+        `The receipt PDF (${getReceiptFilename()}) was just downloaded to this device — ` +
+        `please attach it to this email before sending.`;
+
+      const mailto = `mailto:josh@joshgriffin.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailto;
+      showToast('PDF downloaded — attach it to the email that just opened.');
+    } catch (err) {
+      console.error('Email receipt error:', err);
+      showToast('Could not prepare email.');
+    }
+  }
+
+
     navigator.serviceWorker.register('./sw.js')
       .then(reg => console.log('Griffin Hauling: offline support active', reg.scope))
       .catch(err => console.log('SW registration failed:', err));
@@ -2330,80 +2713,6 @@
       if (b) b.remove();
     });
   }
-
-  // ── Catalog ──
-  const CATALOG = [
-    { sku: '94095563', ghSku: 'GH47047781.5',   name: '3/4" Colorado Rose',          myPrice: 80,  listPrice: 142, margin: 43.7, url: 'https://www.ewingoutdoorsupply.com/94095563-colorado-rose-3-4in-ton' },
-    { sku: '94090784', ghSku: 'GH47045392',      name: '1 1/2" Mountain White Quartz', myPrice: 108, listPrice: 163, margin: 33.7, url: 'https://www.ewingoutdoorsupply.com/94090784-1-1-2-mountain-white-quartz-ton' },
-    { sku: '94090003', ghSku: 'GH47045001.5',    name: '1-2" White River Rock',        myPrice: 100, listPrice: 151, margin: 33.8, url: 'https://www.ewingoutdoorsupply.com/94090003-1-2-white-river-rock-ton' },
-    { sku: '',         ghSku: '',                name: '3/8-1/2" Mesa Pebbles',        myPrice: null,listPrice: null,margin: null, url: '' },
-    { sku: '94090105', ghSku: 'GH47045052.5',    name: '2" Mesa River Rock',           myPrice: 118, listPrice: 167, margin: 29.3, url: 'https://www.ewingoutdoorsupply.com/94090105-2-mesa-river-rock-ton' },
-    { sku: '94090794', ghSku: 'GH47045397',      name: '1 1/2" Black Obsidian',        myPrice: 108, listPrice: 152, margin: 28.9, url: 'https://www.ewingoutdoorsupply.com/94090794-1-1-2-black-obsidian-ton' },
-    { sku: '94090562', ghSku: 'GH47045281',      name: '3/4" Dalmatian',               myPrice: 63,  listPrice: 100, margin: 37.0, url: 'https://www.ewingoutdoorsupply.com/94090562-dalmation-3-4-ton' },
-    { sku: '94090564', ghSku: 'GH47045282',      name: '1 1/2" Dalmatian',             myPrice: 63,  listPrice: 100, margin: 37.0, url: 'https://www.ewingoutdoorsupply.com/94090564-dalmation-1-1-2-ton' },
-    { sku: '94090124', ghSku: 'GH47045062',      name: '1 1/2" Granite',               myPrice: 71,  listPrice: 116, margin: 38.8, url: 'https://www.ewingoutdoorsupply.com/94090124-1-1-2-granite-rock-ton' },
-    { sku: '94090122', ghSku: 'GH47045061',      name: '3/4" Granite',                 myPrice: 71,  listPrice: 116, margin: 38.8, url: 'https://www.ewingoutdoorsupply.com/94090122-3-4-granite-rock-ton' },
-    { sku: '94090064', ghSku: 'GH47045032',      name: '1 1/2" Multi River Rock',      myPrice: 86,  listPrice: 121, margin: 28.9, url: 'https://www.ewingoutdoorsupply.com/94090064-1-1-2-multi-river-rock-ton' },
-    { sku: '94090684', ghSku: 'GH47045342',      name: '1 1/2" Platte River Rock',     myPrice: 55,  listPrice: 99,  margin: 44.4, url: 'https://www.ewingoutdoorsupply.com/94090684-platte-river-rock-1-1-2-ton' },
-    { sku: '94090713', ghSku: 'GH47045356.5',    name: '3/4" Platte River Rock',       myPrice: 55,  listPrice: 99,  margin: 44.4, url: 'https://www.ewingoutdoorsupply.com/94090713-3-4-platte-river-rock-ton' },
-    { sku: '94090024', ghSku: 'GH47045022',      name: '1 1/2" Gold River Rock',       myPrice: 55,  listPrice: 109, margin: 49.5, url: 'https://www.ewingoutdoorsupply.com/94090024-1-1-2-gold-river-rock-ton' },
-    { sku: '94090142', ghSku: 'GH47045071',      name: '3/4" TT Blue Gray',            myPrice: 69,  listPrice: 119, margin: 42.0, url: 'https://www.ewingoutdoorsupply.com/94090142-3-4-tt-blue-gray-rock-ton' },
-    { sku: '94090346', ghSku: 'GH47045173',      name: 'Charcoal Breeze',              myPrice: 39,  listPrice: 77,  margin: 49.4, url: 'https://www.ewingoutdoorsupply.com/94090346-charcoal-breeze-ton' },
-    { sku: '94090120', ghSku: 'GH47045060',      name: '3/8" Granite Chip',            myPrice: 91,  listPrice: 139, margin: 34.5, url: 'https://www.ewingoutdoorsupply.com/94090120-3-8-granite-chip-rock-ton' },
-    { sku: '94090774', ghSku: 'GH47045387',      name: '1 1/2" Salt & Pepper',         myPrice: 108, listPrice: 152, margin: 28.9, url: 'https://www.ewingoutdoorsupply.com/94090774-1-1-2-salt-pepper-ton' },
-    { sku: '94095086', ghSku: 'GH47047543',      name: 'Gray Breeze',                  myPrice: 29,  listPrice: 54,  margin: 46.3, url: 'https://www.ewingoutdoorsupply.com/94095086-grey-breeze-ton' },
-    { sku: '94095066', ghSku: 'GH47047533',      name: 'Tan Breeze',                   myPrice: 23,  listPrice: 49,  margin: 53.1, url: 'https://www.ewingoutdoorsupply.com/94095066-tan-breeze-ton' },
-    { sku: '94090326', ghSku: 'GH47045163',      name: 'Red Breeze',                   myPrice: 42,  listPrice: 90,  margin: 53.3, url: 'https://www.ewingoutdoorsupply.com/94090326-red-breeze-ton' },
-    { sku: '94095565', ghSku: 'GH47047782.5',    name: '1 1/2" Colorado Rose',         myPrice: 80,  listPrice: 142, margin: 43.7, url: 'https://www.ewingoutdoorsupply.com/94095565-colorado-rose-1-1-2in-ton' },
-    { sku: '94090595', ghSku: 'GH47045297.5',    name: '1 1/2" Indian Sunset',         myPrice: 108, listPrice: 163, margin: 33.7, url: 'https://www.ewingoutdoorsupply.com/94090595-indian-sunset-1-1-2-ton' },
-    { sku: '94090044', ghSku: 'GH47045022',      name: '1 1/2" Gray River Rock',       myPrice: 68,  listPrice: 95,  margin: 28.4, url: 'https://www.ewingoutdoorsupply.com/94090044-1-1-2-gray-river-rock-ton' },
-    { sku: '94090144', ghSku: 'GH47045072',      name: '1 1/2" TT Blue Gray',          myPrice: 70,  listPrice: 119, margin: 41.2, url: 'https://www.ewingoutdoorsupply.com/94090144-1-1-2-tt-blue-gray-rock-ton' },
-  ];
-
-  function initCatalog() {
-    // Compute stats
-    const priced = CATALOG.filter(p => p.myPrice !== null);
-    const avgMargin = (priced.reduce((s, p) => s + p.margin, 0) / priced.length).toFixed(1);
-    const minP = Math.min(...priced.map(p => p.myPrice));
-    const maxP = Math.max(...priced.map(p => p.myPrice));
-    document.getElementById('cat-avg-margin').textContent = avgMargin + '%';
-    document.getElementById('cat-price-range').textContent = '$' + minP + '–$' + maxP;
-    filterCatalog();
-  }
-
-  function filterCatalog() {
-    const q = (document.getElementById('catalogSearch').value || '').toLowerCase();
-    const sort = document.getElementById('catalogSort').value;
-    let items = CATALOG.filter(p => p.name.toLowerCase().includes(q) || p.sku.includes(q) || p.ghSku.toLowerCase().includes(q));
-
-    if (sort === 'name')       items.sort((a, b) => a.name.localeCompare(b.name));
-    else if (sort === 'price-asc')  items.sort((a, b) => (a.myPrice || 0) - (b.myPrice || 0));
-    else if (sort === 'price-desc') items.sort((a, b) => (b.myPrice || 0) - (a.myPrice || 0));
-    else if (sort === 'margin')     items.sort((a, b) => (b.margin || 0) - (a.margin || 0));
-
-    const list = document.getElementById('catalogList');
-    if (!items.length) {
-      list.innerHTML = '<div class="catalog-no-results">No products match your search.</div>';
-      return;
-    }
-    list.innerHTML = items.map(p => `
-      <div class="catalog-item">
-        <div class="catalog-item-info">
-          <div class="catalog-item-name">${p.name}</div>
-          <div class="catalog-item-sku">${p.ghSku || p.sku || '—'}</div>
-        </div>
-        <div class="catalog-item-prices">
-          <div class="catalog-my-price">${p.myPrice !== null ? '$' + p.myPrice : '—'}</div>
-          ${p.listPrice ? `<div class="catalog-list-price">$${p.listPrice} list</div>` : ''}
-          ${p.margin !== null ? `<div class="catalog-margin">${p.margin}%</div>` : ''}
-        </div>
-        ${p.url ? `<a class="catalog-link" href="${p.url}" target="_blank" rel="noopener" title="View on Ewing">↗</a>` : ''}
-      </div>
-    `).join('');
-  }
-
-  // Init catalog on load
-  document.addEventListener('DOMContentLoaded', initCatalog);
 
 </script>
 </body>
