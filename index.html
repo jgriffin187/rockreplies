@@ -1708,6 +1708,9 @@
     <div class="form-total" id="r-total">$0.00</div>
 
     <button class="btn-primary" style="width:100%;margin-top:14px;" onclick="generateReceiptFromForm()">🧾 Generate Receipt</button>
+
+    <div class="category-label" style="margin-top:22px;">Saved Receipts</div>
+    <div class="delivery-list" id="savedReceiptsList"></div>
   </div>
 
 </div><!-- end main -->
@@ -1849,6 +1852,16 @@
 <script>
   // ── Schedule state (declared early so all functions can access) ──
   const SCHED_KEY = 'griffin_schedule';
+  const RECEIPTS_KEY = 'griffin_receipts';
+
+  // ── EmailJS config (https://www.emailjs.com — free tier works) ──
+  // Create an account, an Email Service, and a Template (with params:
+  // to_email, subject, message, pdf_base64, pdf_filename), then fill these in.
+  // Until configured, "Email Receipt" will save the PDF locally and let you
+  // know automatic sending isn't set up yet.
+  const EMAILJS_PUBLIC_KEY  = 'YOUR_EMAILJS_PUBLIC_KEY';
+  const EMAILJS_SERVICE_ID  = 'YOUR_EMAILJS_SERVICE_ID';
+  const EMAILJS_TEMPLATE_ID = 'YOUR_EMAILJS_TEMPLATE_ID';
   let showingPast = false;
   let showingDelivered = false;
   let currentMaterial = 'rock';
@@ -2601,6 +2614,7 @@
     if (document.getElementById('receiptItems').children.length === 0) {
       addReceiptItemRow();
     }
+    renderSavedReceipts();
   }
 
   function addReceiptItemRow(desc = '', qty = '', unit = 'tons', price = '') {
@@ -2703,9 +2717,14 @@
   }
 
   function openReceiptPreview(data) {
+    if (!data.receiptNo) data.receiptNo = 'GH-' + Date.now().toString().slice(-8);
+    if (!data.createdAt) data.createdAt = Date.now();
     document.getElementById('receiptPaper').innerHTML = buildReceiptPaperHTML(data);
+    document.getElementById('receiptPaper').dataset.receiptNo = data.receiptNo;
     document.getElementById('receiptOverlay').classList.add('open');
     document.body.style.overflow = 'hidden';
+    saveReceiptRecord(data);
+    renderSavedReceipts();
   }
 
   function closeReceiptPreview() {
@@ -2717,10 +2736,129 @@
     if (e.target === this) closeReceiptPreview();
   });
 
+  // ── Saved receipts (localStorage) ─────────────────────────
+  function loadSavedReceipts() {
+    if (!storageAvailable()) return [];
+    try {
+      return JSON.parse(localStorage.getItem(RECEIPTS_KEY) || '[]');
+    } catch {
+      return [];
+    }
+  }
+
+  function saveReceiptRecord(data) {
+    if (!storageAvailable()) return;
+    const all = loadSavedReceipts();
+    const total = data.items.reduce((sum, it) => sum + (parseFloat(it.price) || 0), 0);
+    const idx = all.findIndex(r => r.receiptNo === data.receiptNo);
+    const record = {
+      receiptNo: data.receiptNo,
+      createdAt: data.createdAt || Date.now(),
+      name: data.name || '',
+      address: data.address || '',
+      date: data.date || '',
+      items: data.items || [],
+      notes: data.notes || '',
+      total,
+      pdfDataUrl: (idx > -1 ? all[idx].pdfDataUrl : null) || null,
+    };
+    if (idx > -1) all[idx] = record; else all.unshift(record);
+    // Keep the most recent 100 receipts to avoid bloating localStorage
+    const trimmed = all.slice(0, 100);
+    try {
+      localStorage.setItem(RECEIPTS_KEY, JSON.stringify(trimmed));
+    } catch (err) {
+      console.error('Could not save receipt record:', err);
+    }
+  }
+
+  function updateSavedReceiptPdf(receiptNo, pdfDataUrl) {
+    if (!storageAvailable()) return;
+    const all = loadSavedReceipts();
+    const idx = all.findIndex(r => r.receiptNo === receiptNo);
+    if (idx > -1) {
+      all[idx].pdfDataUrl = pdfDataUrl;
+      try {
+        localStorage.setItem(RECEIPTS_KEY, JSON.stringify(all));
+      } catch (err) {
+        console.error('Could not store receipt PDF:', err);
+      }
+    }
+  }
+
+  function renderSavedReceipts() {
+    const list = document.getElementById('savedReceiptsList');
+    if (!list) return;
+    const all = loadSavedReceipts();
+
+    if (all.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div class="empty-icon">🧾</div><p>No receipts saved yet.</p></div>`;
+      return;
+    }
+
+    list.innerHTML = all.map(r => `
+      <div class="delivery-card status-delivered">
+        <div class="delivery-header" onclick="toggleDeliveryBody('rcpt-${r.receiptNo}')">
+          <div style="flex:1;min-width:0;">
+            <div class="delivery-name">${escapeHtml(r.name)}</div>
+            <div class="delivery-date-row">📅 ${r.date ? formatDate(r.date) : '—'} · ${r.receiptNo}</div>
+            <div class="delivery-total-row">Total: <span>$${(r.total||0).toFixed(2)}</span></div>
+          </div>
+          <span class="delivery-badge badge-delivered">${r.pdfDataUrl ? 'Saved' : 'Generated'}</span>
+        </div>
+        <div class="delivery-body" id="dbody-rcpt-${r.receiptNo}">
+          <div class="delivery-actions">
+            <button class="btn-receipt" onclick="reopenSavedReceipt('${r.receiptNo}')">👁️ View</button>
+            ${r.pdfDataUrl ? `<button class="btn-receipt" onclick="downloadSavedReceiptPdf('${r.receiptNo}')">⬇️ PDF</button>` : ''}
+            <button class="btn-danger" onclick="deleteSavedReceipt('${r.receiptNo}')">Delete</button>
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  function reopenSavedReceipt(receiptNo) {
+    const all = loadSavedReceipts();
+    const record = all.find(r => r.receiptNo === receiptNo);
+    if (!record) { showToast('Receipt not found.'); return; }
+    openReceiptPreview({
+      receiptNo: record.receiptNo,
+      createdAt: record.createdAt,
+      name: record.name,
+      address: record.address,
+      date: record.date,
+      items: record.items,
+      notes: record.notes,
+    });
+  }
+
+  function downloadSavedReceiptPdf(receiptNo) {
+    const all = loadSavedReceipts();
+    const record = all.find(r => r.receiptNo === receiptNo);
+    if (!record || !record.pdfDataUrl) { showToast('No saved PDF for this receipt.'); return; }
+    const a = document.createElement('a');
+    a.href = record.pdfDataUrl;
+    a.download = `GriffinHauling_Receipt_${(record.name||'receipt').replace(/[^a-z0-9]+/gi,'_')}_${record.date||''}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  function deleteSavedReceipt(receiptNo) {
+    let all = loadSavedReceipts();
+    all = all.filter(r => r.receiptNo !== receiptNo);
+    try {
+      localStorage.setItem(RECEIPTS_KEY, JSON.stringify(all));
+    } catch (err) {
+      console.error('Could not delete receipt:', err);
+    }
+    renderSavedReceipts();
+    showToast('Receipt deleted.');
+  }
+
   function buildReceiptPaperHTML(data) {
     const logoSrc = document.querySelector('header img').src;
     const total = data.items.reduce((sum, it) => sum + (parseFloat(it.price) || 0), 0);
-    const receiptNo = 'GH-' + Date.now().toString().slice(-8);
+    const receiptNo = data.receiptNo || ('GH-' + Date.now().toString().slice(-8));
     const dateDisplay = data.date
       ? new Date(data.date + 'T12:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
       : '';
@@ -2737,7 +2875,7 @@
       <div class="receipt-head">
         <img src="${logoSrc}" alt="Griffin Hauling">
         <div class="receipt-brand-info">
-          <strong>Griffin Hauling</strong><br>
+          <strong>Griffin Hauling, LLC</strong><br>
           Landscape Rock &amp; Mulch Delivery<br>
           josh@joshgriffin.com
         </div>
@@ -2771,7 +2909,7 @@
       ${data.notes ? `<div class="receipt-billto" style="margin-top:14px;"><div class="label">Notes</div><div class="addr">${escapeHtml(data.notes)}</div></div>` : ''}
 
       <div class="receipt-footer">
-        Thank you for choosing <strong>Griffin Hauling</strong>!<br>
+        Thank you for choosing <strong>Griffin Hauling, LLC</strong>!<br>
         Questions about this receipt? Reach out at josh@joshgriffin.com
       </div>
     `;
@@ -2783,6 +2921,12 @@
     }
     if (!window.jspdf) {
       await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    }
+  }
+
+  async function ensureEmailJsLib() {
+    if (!window.emailjs) {
+      await loadScript('https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js');
     }
   }
 
@@ -2817,12 +2961,20 @@
     return `GriffinHauling_Receipt_${name}_${date}.pdf`;
   }
 
+  function getCurrentReceiptNo() {
+    return document.getElementById('receiptPaper').dataset.receiptNo || null;
+  }
+
   async function downloadReceiptPDF() {
     showToast('Generating PDF...');
     try {
       const { pdf } = await buildReceiptPdfBlob();
+      const dataUrl = pdf.output('datauristring');
+      const receiptNo = getCurrentReceiptNo();
+      if (receiptNo) updateSavedReceiptPdf(receiptNo, dataUrl);
+      renderSavedReceipts();
       pdf.save(getReceiptFilename());
-      showToast('Receipt PDF downloaded!');
+      showToast('Receipt PDF downloaded & saved!');
     } catch (err) {
       console.error('PDF generation error:', err);
       showToast('Could not generate PDF.');
@@ -2833,7 +2985,11 @@
     showToast('Generating PDF...');
     try {
       const { pdf } = await buildReceiptPdfBlob();
-      pdf.save(getReceiptFilename());
+      const dataUrl = pdf.output('datauristring');
+      const base64 = dataUrl.split(',')[1];
+      const receiptNo = getCurrentReceiptNo();
+      if (receiptNo) updateSavedReceiptPdf(receiptNo, dataUrl);
+      renderSavedReceipts();
 
       const nameEl = document.querySelector('#receiptPaper .receipt-billto .name');
       const dateEl = document.querySelector('#receiptPaper .receipt-meta b[contenteditable="true"]');
@@ -2841,20 +2997,39 @@
       const customer = nameEl ? nameEl.textContent.trim() : '';
       const date = dateEl ? dateEl.textContent.trim() : '';
       const total = totalEl ? totalEl.textContent.trim() : '';
+      const filename = getReceiptFilename();
 
       const subject = `Receipt - ${customer} - ${date}`;
-      const body =
+      const message =
         `Receipt generated for ${customer} (${date}).\n` +
         `Total: ${total}\n\n` +
-        `The receipt PDF (${getReceiptFilename()}) was just downloaded to this device — ` +
-        `please attach it to this email before sending.`;
+        `Receipt #: ${receiptNo || ''}`;
 
-      const mailto = `mailto:josh@joshgriffin.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      window.location.href = mailto;
-      showToast('PDF downloaded — attach it to the email that just opened.');
+      const isConfigured =
+        EMAILJS_PUBLIC_KEY  !== 'YOUR_EMAILJS_PUBLIC_KEY' &&
+        EMAILJS_SERVICE_ID  !== 'YOUR_EMAILJS_SERVICE_ID' &&
+        EMAILJS_TEMPLATE_ID !== 'YOUR_EMAILJS_TEMPLATE_ID';
+
+      if (!isConfigured) {
+        pdf.save(filename);
+        showToast('Email sending isn\'t configured yet — PDF saved & downloaded instead.');
+        return;
+      }
+
+      await ensureEmailJsLib();
+      window.emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+      await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email: 'josh@joshgriffin.com',
+        subject,
+        message,
+        pdf_base64: base64,
+        pdf_filename: filename,
+      });
+
+      showToast('Receipt emailed to josh@joshgriffin.com!');
     } catch (err) {
       console.error('Email receipt error:', err);
-      showToast('Could not prepare email.');
+      showToast('Could not send email — check EmailJS setup.');
     }
   }
 
