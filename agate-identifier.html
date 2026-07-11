@@ -350,7 +350,7 @@
   <div class="icon"></div>
   <div>
     <h1>Lake Superior Agate ID</h1>
-    <p>Photo-based banding &amp; color heuristic</p>
+    <p>AI photo analysis, powered by Claude</p>
   </div>
 </header>
 
@@ -359,7 +359,7 @@
   <div class="card" id="uploadCard">
     <div class="rock-illustration"></div>
     <h2>Check a rock for agate banding</h2>
-    <p class="hint">Take a photo of a wet or sunlit rock, or upload one from your photo library. The app scans the image for the concentric banding, color palette, and glassy edges typical of Lake Superior agates, and circles the most likely spot.</p>
+    <p class="hint">Take a photo of a wet or sunlit rock, or upload one from your photo library. Claude looks at the actual photo for the banding, color palette, and glassy edges typical of Lake Superior agates, and circles the most likely spot.</p>
     <div class="btn-row">
       <button class="btn btn-primary" id="btnCamera">📷 Take Photo</button>
       <button class="btn btn-secondary" id="btnLibrary">🖼️ Choose from Library</button>
@@ -375,7 +375,7 @@
     </div>
     <div class="analyzing-bar" id="analyzingBar">
       <div class="spinner"></div>
-      <span>Scanning for banding patterns…</span>
+      <span id="analyzingText">Asking Claude to look at the photo…</span>
     </div>
 
     <div class="verdict" id="verdictBox">
@@ -445,7 +445,7 @@
   </div>
 
   <p class="disclaimer">
-    This tool looks for visual patterns (banding, color, edges, translucency cues) in the photo — it isn't a trained AI rock classifier, and lighting, wet vs. dry rock, and photo quality all affect results. Treat the circle as a "look closer here" pointer, and confirm with the checks above (or a local rock club) before you decide what you've found.
+    This tool sends your photo to Claude (Anthropic's AI) for a real visual read of the rock — but lighting, wet vs. dry rock, and photo quality all still affect results, and it can be wrong. Treat the circle as a "look closer here" pointer, and confirm with the checks above (or a local rock club) before you decide what you've found.
   </p>
 
 </main>
@@ -454,11 +454,16 @@
 (function () {
   'use strict';
 
+  // Set this to your deployed Cloudflare Worker URL (see worker/README.md).
+  // Example: 'https://agate-identifier.your-subdomain.workers.dev'
+  const API_ENDPOINT = 'https://agate-identifier.YOUR-SUBDOMAIN.workers.dev';
+
   const uploadCard   = document.getElementById('uploadCard');
   const previewCard  = document.getElementById('previewCard');
   const renderCanvas = document.getElementById('renderCanvas');
   const overlayCanvas= document.getElementById('overlayCanvas');
   const analyzingBar = document.getElementById('analyzingBar');
+  const analyzingText= document.getElementById('analyzingText');
   const verdictBox   = document.getElementById('verdictBox');
   const checklistEl  = document.getElementById('checklist');
   const fileInput    = document.getElementById('fileInput');
@@ -502,9 +507,10 @@
     verdictBox.style.display = 'none';
     checklistEl.style.display = 'none';
     checklistEl.innerHTML = '';
+    analyzingText.textContent = 'Asking Claude to look at the photo…';
     analyzingBar.style.display = 'flex';
 
-    // ---- render canvas (what the user sees) ----
+    // ---- render canvas (what the user sees, and the overlay draws onto) ----
     const MAX_RENDER = 900;
     const scale = Math.min(1, MAX_RENDER / Math.max(img.width, img.height));
     const rw = Math.round(img.width * scale);
@@ -516,341 +522,138 @@
     const rctx = renderCanvas.getContext('2d');
     rctx.drawImage(img, 0, 0, rw, rh);
 
-    // give the browser a paint frame before the heavier analysis pass
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        const result = analyzeImage(renderCanvas);
-        drawOverlay(result);
-        showResult(result);
-        analyzingBar.style.display = 'none';
-      }, 30);
-    });
+    // ---- smaller JPEG for upload (keeps requests fast and cheap) ----
+    const MAX_UPLOAD = 1024;
+    const uScale = Math.min(1, MAX_UPLOAD / Math.max(img.width, img.height));
+    const uw = Math.round(img.width * uScale);
+    const uh = Math.round(img.height * uScale);
+    const uc = document.createElement('canvas');
+    uc.width = uw; uc.height = uh;
+    uc.getContext('2d').drawImage(img, 0, 0, uw, uh);
+
+    uc.toBlob(blob => {
+      if (!blob) {
+        showError("Couldn't process that photo. Try a different one.");
+        return;
+      }
+      const uploadReader = new FileReader();
+      uploadReader.onload = () => {
+        const dataUrl = uploadReader.result;
+        const base64 = dataUrl.substring(dataUrl.indexOf(',') + 1);
+        sendToApi(base64, 'image/jpeg');
+      };
+      uploadReader.readAsDataURL(blob);
+    }, 'image/jpeg', 0.85);
   }
 
-  // ---------------------------------------------------------------
-  // Image analysis: looks for concentric/parallel banding, an
-  // agate-like color palette, sharp band edges, and a glassy
-  // highlight — the same visual cues described in the reference
-  // panel above.
-  // ---------------------------------------------------------------
-  function analyzeImage(srcCanvas) {
-    const ANALYSIS_MAX = 240;
-    const scale = Math.min(1, ANALYSIS_MAX / Math.max(srcCanvas.width, srcCanvas.height));
-    const aw = Math.max(24, Math.round(srcCanvas.width * scale));
-    const ah = Math.max(24, Math.round(srcCanvas.height * scale));
-
-    const ac = document.createElement('canvas');
-    ac.width = aw; ac.height = ah;
-    const actx = ac.getContext('2d');
-    actx.drawImage(srcCanvas, 0, 0, aw, ah);
-    const imgData = actx.getImageData(0, 0, aw, ah);
-    const data = imgData.data;
-
-    function px(x, y) {
-      x = Math.max(0, Math.min(aw - 1, x | 0));
-      y = Math.max(0, Math.min(ah - 1, y | 0));
-      const i = (y * aw + x) * 4;
-      return [data[i], data[i + 1], data[i + 2]];
+  async function sendToApi(imageBase64, mediaType) {
+    if (!API_ENDPOINT || API_ENDPOINT.includes('YOUR-SUBDOMAIN')) {
+      showError('This app needs its backend URL configured. See worker/README.md for deploy steps, then set API_ENDPOINT near the top of this page\'s script.');
+      return;
     }
 
-    function gray(x, y) {
-      const p = px(x, y);
-      return 0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2];
-    }
-
-    // Sobel edge magnitude, precomputed once
-    const edgeMap = new Float32Array(aw * ah);
-    for (let y = 1; y < ah - 1; y++) {
-      for (let x = 1; x < aw - 1; x++) {
-        const gx =
-          -gray(x - 1, y - 1) - 2 * gray(x - 1, y) - gray(x - 1, y + 1) +
-           gray(x + 1, y - 1) + 2 * gray(x + 1, y) + gray(x + 1, y + 1);
-        const gy =
-          -gray(x - 1, y - 1) - 2 * gray(x, y - 1) - gray(x + 1, y - 1) +
-           gray(x - 1, y + 1) + 2 * gray(x, y + 1) + gray(x + 1, y + 1);
-        edgeMap[y * aw + x] = Math.sqrt(gx * gx + gy * gy);
-      }
-    }
-    function edgeAt(x, y) {
-      x = Math.max(1, Math.min(aw - 2, x | 0));
-      y = Math.max(1, Math.min(ah - 2, y | 0));
-      return edgeMap[y * aw + x];
-    }
-
-    function rgbToHsl(r, g, b) {
-      r /= 255; g /= 255; b /= 255;
-      const max = Math.max(r, g, b), min = Math.min(r, g, b);
-      let h = 0, s = 0, l = (max + min) / 2;
-      const d = max - min;
-      if (d !== 0) {
-        s = d / (1 - Math.abs(2 * l - 1));
-        switch (max) {
-          case r: h = ((g - b) / d) % 6; break;
-          case g: h = (b - r) / d + 2; break;
-          case b: h = (r - g) / d + 4; break;
-        }
-        h *= 60;
-        if (h < 0) h += 360;
-      }
-      return [h, s, l];
-    }
-
-    function isAgateHue(r, g, b) {
-      const [h, s, l] = rgbToHsl(r, g, b);
-      // warm reddish/orange/amber bands
-      if ((h <= 55 || h >= 340) && s > 0.18 && l > 0.15 && l < 0.85) return true;
-      // cream / white / gray translucent bands
-      if (s < 0.22 && l > 0.35) return true;
-      return false;
-    }
-
-    const minDim = Math.min(aw, ah);
-    const radii = [minDim * 0.14, minDim * 0.19, minDim * 0.25, minDim * 0.32].filter(r => r >= 10);
-    const RING_COUNT = 4;
-    const ANGLE_SAMPLES = 16;
-
-    const candidates = [];
-
-    for (const r of radii) {
-      const step = Math.max(5, Math.round(r * 0.35));
-      for (let cy = Math.round(r * 0.8); cy < ah - r * 0.8; cy += step) {
-        for (let cx = Math.round(r * 0.8); cx < aw - r * 0.8; cx += step) {
-          const score = scoreCircle(cx, cy, r);
-          if (score) candidates.push(score);
-        }
-      }
-    }
-
-    function scoreCircle(cx, cy, r) {
-      const ringMeanRGB = [];
-      const ringVar = [];
-      let paletteHits = 0;
-      let paletteTotal = 0;
-      let maxBrightness = 0;
-      let brightnessSum = 0;
-      let brightnessN = 0;
-
-      for (let ring = 1; ring <= RING_COUNT; ring++) {
-        const rad = r * (ring / RING_COUNT);
-        let sr = 0, sg = 0, sb = 0;
-        const samples = [];
-        for (let a = 0; a < ANGLE_SAMPLES; a++) {
-          const theta = (a / ANGLE_SAMPLES) * Math.PI * 2;
-          const x = cx + Math.cos(theta) * rad;
-          const y = cy + Math.sin(theta) * rad;
-          const p = px(x, y);
-          samples.push(p);
-          sr += p[0]; sg += p[1]; sb += p[2];
-          if (isAgateHue(p[0], p[1], p[2])) paletteHits++;
-          paletteTotal++;
-          const b = (p[0] + p[1] + p[2]) / 3;
-          brightnessSum += b; brightnessN++;
-          if (b > maxBrightness) maxBrightness = b;
-        }
-        const n = samples.length;
-        const mean = [sr / n, sg / n, sb / n];
-        let varSum = 0;
-        for (const p of samples) {
-          const dr = p[0] - mean[0], dg = p[1] - mean[1], db = p[2] - mean[2];
-          varSum += dr * dr + dg * dg + db * db;
-        }
-        ringMeanRGB.push(mean);
-        ringVar.push(varSum / n);
-      }
-
-      // uniformity: rings that are internally consistent (low variance) score higher
-      const avgVar = ringVar.reduce((a, b) => a + b, 0) / ringVar.length;
-      const uniformity = clamp01(1 - avgVar / 9000);
-
-      // contrast: adjacent rings should differ from one another (band transitions)
-      let contrastSum = 0;
-      let transitions = 0;
-      for (let i = 0; i < ringMeanRGB.length - 1; i++) {
-        const a = ringMeanRGB[i], b = ringMeanRGB[i + 1];
-        const dist = Math.sqrt(
-          (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2
-        );
-        contrastSum += dist;
-        if (dist > 28) transitions++;
-      }
-      const contrast = clamp01((contrastSum / (ringMeanRGB.length - 1)) / 90);
-      const transitionBonus = clamp01(transitions / 2);
-
-      // edge definition along ring boundaries
-      let edgeSum = 0, edgeN = 0;
-      for (let ring = 1; ring < RING_COUNT; ring++) {
-        const rad = r * (ring / RING_COUNT);
-        for (let a = 0; a < ANGLE_SAMPLES; a++) {
-          const theta = (a / ANGLE_SAMPLES) * Math.PI * 2;
-          const x = cx + Math.cos(theta) * rad;
-          const y = cy + Math.sin(theta) * rad;
-          edgeSum += edgeAt(x, y);
-          edgeN++;
-        }
-      }
-      const edgeScore = clamp01((edgeSum / edgeN) / 55);
-
-      const paletteScore = paletteTotal ? paletteHits / paletteTotal : 0;
-
-      const avgBrightness = brightnessSum / brightnessN;
-      const highlightScore = clamp01((maxBrightness - avgBrightness) / 120);
-
-      const total =
-        0.30 * uniformity +
-        0.22 * contrast +
-        0.10 * transitionBonus +
-        0.18 * edgeScore +
-        0.13 * paletteScore +
-        0.07 * highlightScore;
-
-      return {
-        cx, cy, r, total,
-        sub: { uniformity, contrast, transitionBonus, edgeScore, paletteScore, highlightScore }
-      };
-    }
-
-    function clamp01(v) { return Math.max(0, Math.min(1, v)); }
-
-    candidates.sort((a, b) => b.total - a.total);
-
-    const picked = [];
-    for (const c of candidates) {
-      if (picked.length >= 2) break;
-      const overlaps = picked.some(p => {
-        const d = Math.hypot(p.cx - c.cx, p.cy - c.cy);
-        return d < (p.r + c.r) * 0.7;
+    try {
+      const res = await fetch(API_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64, mediaType })
       });
-      if (!overlaps) picked.push(c);
+
+      if (!res.ok) {
+        let detail = '';
+        try { detail = (await res.json()).error || ''; } catch (e) {}
+        throw new Error(detail || `Server returned ${res.status}`);
+      }
+
+      const result = await res.json();
+      drawOverlay(result);
+      showResult(result);
+    } catch (err) {
+      console.error(err);
+      showError("Couldn't reach the analysis service. Check your connection and try again. (" + err.message + ")");
+    } finally {
+      analyzingBar.style.display = 'none';
     }
+  }
 
-    const best = picked[0] || null;
-
-    return {
-      analysisW: aw, analysisH: ah,
-      best,
-      all: picked
-    };
+  function showError(message) {
+    analyzingBar.style.display = 'none';
+    verdictBox.style.display = 'block';
+    checklistEl.style.display = 'none';
+    checklistEl.innerHTML = '';
+    verdictBox.className = 'verdict unlikely';
+    document.getElementById('verdictIcon').textContent = '⚠';
+    document.getElementById('verdictText').textContent = 'Something went wrong';
+    document.getElementById('confBadge').textContent = '—';
+    document.getElementById('verdictSub').textContent = message;
   }
 
   function drawOverlay(result) {
     const octx = overlayCanvas.getContext('2d');
     octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-    if (!result.best) return;
 
-    const scaleX = overlayCanvas.width / result.analysisW;
-    const scaleY = overlayCanvas.height / result.analysisH;
+    const region = result.region;
+    if (!region || !region.present) return;
 
-    result.all.forEach((c, idx) => {
-      const cx = c.cx * scaleX;
-      const cy = c.cy * scaleY;
-      const r = c.r * ((scaleX + scaleY) / 2) * 1.15;
-      const isBest = idx === 0;
-      const color = c.total >= 0.62 ? '#22c55e' : c.total >= 0.45 ? '#eab308' : '#ef4444';
+    const cx = region.center_x * overlayCanvas.width;
+    const cy = region.center_y * overlayCanvas.height;
+    const r = region.radius * Math.min(overlayCanvas.width, overlayCanvas.height);
+    const color = result.verdict === 'likely' ? '#22c55e' : result.verdict === 'possible' ? '#eab308' : '#ef4444';
 
-      octx.save();
-      octx.lineWidth = isBest ? 3.5 : 2;
-      octx.strokeStyle = color;
-      octx.shadowColor = 'rgba(0,0,0,0.6)';
-      octx.shadowBlur = 6;
-      octx.globalAlpha = isBest ? 1 : 0.55;
-      octx.beginPath();
-      octx.arc(cx, cy, r, 0, Math.PI * 2);
-      octx.stroke();
+    octx.save();
+    octx.lineWidth = 3.5;
+    octx.strokeStyle = color;
+    octx.shadowColor = 'rgba(0,0,0,0.6)';
+    octx.shadowBlur = 6;
+    octx.beginPath();
+    octx.arc(cx, cy, r, 0, Math.PI * 2);
+    octx.stroke();
 
-      if (isBest) {
-        octx.globalAlpha = 1;
-        octx.fillStyle = color;
-        octx.font = '600 12px Inter, sans-serif';
-        const label = Math.round(c.total * 100) + '%';
-        const tw = octx.measureText(label).width;
-        const lx = Math.min(overlayCanvas.width - tw - 10, Math.max(4, cx - tw / 2));
-        const ly = Math.max(16, cy - r - 8);
-        octx.fillStyle = 'rgba(0,0,0,0.65)';
-        octx.fillRect(lx - 5, ly - 13, tw + 10, 18);
-        octx.fillStyle = color;
-        octx.fillText(label, lx, ly);
-      }
-      octx.restore();
-    });
+    const label = Math.round((result.confidence || 0) * 100) + '%';
+    octx.font = '600 12px Inter, sans-serif';
+    const tw = octx.measureText(label).width;
+    const lx = Math.min(overlayCanvas.width - tw - 10, Math.max(4, cx - tw / 2));
+    const ly = Math.max(16, cy - r - 8);
+    octx.fillStyle = 'rgba(0,0,0,0.65)';
+    octx.fillRect(lx - 5, ly - 13, tw + 10, 18);
+    octx.fillStyle = color;
+    octx.fillText(label, lx, ly);
+    octx.restore();
   }
+
+  const CRITERIA_TITLES = {
+    banding: 'Banding pattern',
+    color_palette: 'Color palette',
+    translucency_luster: 'Translucency & luster',
+    shape_texture: 'Shape & texture'
+  };
 
   function showResult(result) {
     verdictBox.style.display = 'block';
     checklistEl.style.display = 'grid';
 
-    if (!result.best) {
-      verdictBox.className = 'verdict unlikely';
-      document.getElementById('verdictIcon').textContent = '✗';
-      document.getElementById('verdictText').textContent = "No clear banding found";
-      document.getElementById('confBadge').textContent = '—';
-      document.getElementById('verdictSub').textContent =
-        "Couldn't find a region with agate-like banding or color contrast. Try a closer, well-lit, in-focus photo — wetting the rock often makes bands much easier to see.";
-      checklistEl.innerHTML = '';
-      return;
-    }
-
-    const s = result.best.sub;
-    const total = result.best.total;
-
-    let tier, icon, label, sub;
-    if (total >= 0.62) {
-      tier = 'likely'; icon = '✓';
-      label = 'Likely contains an agate';
-      sub = 'The circled area shows strong concentric banding, matching colors, and sharp band edges — the classic Lake Superior agate signature. Confirm with the checks below.';
-    } else if (total >= 0.45) {
-      tier = 'possible'; icon = '~';
-      label = 'Possibly an agate — worth a closer look';
-      sub = 'The circled area has some banding or color contrast, but it isn\'t a strong match. Try wetting the rock or checking it in direct sunlight, then re-scan.';
-    } else {
-      tier = 'unlikely'; icon = '✗';
-      label = "Doesn't show strong agate characteristics";
-      sub = 'The best match found was weak — the rock may lack visible banding, or the photo may be too dark, blurry, or low-contrast to tell.';
-    }
+    const tier = result.verdict === 'likely' ? 'likely' : result.verdict === 'possible' ? 'possible' : 'unlikely';
+    const icon = tier === 'likely' ? '✓' : tier === 'possible' ? '~' : '✗';
+    const labels = {
+      likely: 'Likely contains an agate',
+      possible: 'Possibly an agate — worth a closer look',
+      unlikely: "Doesn't show strong agate characteristics"
+    };
 
     verdictBox.className = 'verdict ' + tier;
     document.getElementById('verdictIcon').textContent = icon;
-    document.getElementById('verdictText').textContent = label;
-    document.getElementById('confBadge').textContent = Math.round(total * 100) + '% match';
-    document.getElementById('verdictSub').textContent = sub;
+    document.getElementById('verdictText').textContent = labels[tier];
+    document.getElementById('confBadge').textContent = Math.round((result.confidence || 0) * 100) + '% confidence';
+    document.getElementById('verdictSub').textContent = result.summary || '';
 
-    const items = [
-      {
-        key: (s.uniformity + s.contrast) / 2,
-        title: 'Banding pattern',
-        yes: 'Clear parallel/concentric bands detected around the circled spot.',
-        maybe: 'Faint or partial banding — hard to be sure at this angle/lighting.',
-        no: 'No repeating band structure found in this region.'
-      },
-      {
-        key: s.paletteScore,
-        title: 'Color palette',
-        yes: 'Colors match the classic agate range (red/orange/rust with cream or white).',
-        maybe: 'Colors are a partial match — some agate tones, some not.',
-        no: "Colors don't resemble typical agate banding (may be plain rock or background)."
-      },
-      {
-        key: s.edgeScore,
-        title: 'Band edge sharpness',
-        yes: 'Crisp, well-defined edges between color zones, consistent with a glassy chalcedony surface.',
-        maybe: 'Edges are somewhat soft — could be lighting, focus, or a duller surface.',
-        no: 'No sharp transitions found — surface may be uniform, dull, or out of focus.'
-      },
-      {
-        key: s.highlightScore,
-        title: 'Glassy highlight',
-        yes: 'A bright specular highlight suggests a smooth, waxy/glassy surface (typical of agate).',
-        maybe: 'Slight highlight — inconclusive on its own.',
-        no: 'No glassy highlight detected — surface may be matte or dry.'
-      }
-    ];
-
-    checklistEl.innerHTML = items.map(it => {
-      const level = it.key >= 0.6 ? 'yes' : it.key >= 0.35 ? 'maybe' : 'no';
+    const criteria = result.criteria || {};
+    checklistEl.innerHTML = Object.keys(CRITERIA_TITLES).map(key => {
+      const c = criteria[key] || { rating: 'no', explanation: 'No data returned for this criterion.' };
+      const level = c.rating === 'yes' ? 'yes' : c.rating === 'maybe' ? 'maybe' : 'no';
       const mark = level === 'yes' ? '✓' : level === 'maybe' ? '~' : '✗';
-      const text = it[level];
       return `<div class="check-item">
         <div class="check-mark ${level}">${mark}</div>
-        <div class="check-text"><strong>${it.title}</strong><span>${text}</span></div>
+        <div class="check-text"><strong>${CRITERIA_TITLES[key]}</strong><span>${c.explanation || ''}</span></div>
       </div>`;
     }).join('');
   }
