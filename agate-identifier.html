@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d1520">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Agate ID">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23f5821f'/%3E%3Ccircle cx='32' cy='32' r='22' fill='%23fff3e0'/%3E%3Ccircle cx='32' cy='32' r='14' fill='%23c9670f'/%3E%3Ccircle cx='32' cy='32' r='6' fill='%23fff3e0'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230d1520'/%3E%3Ccircle cx='32' cy='32' r='27' fill='%23f5821f'/%3E%3Ccircle cx='32' cy='32' r='19' fill='%23fff3e0'/%3E%3Ccircle cx='32' cy='32' r='11' fill='%23c9670f'/%3E%3Ccircle cx='32' cy='32' r='4' fill='%23fff3e0'/%3E%3C/svg%3E">
+<title>Lake Superior Agate Identifier</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@700;800&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0d1520;
+    --surface:   #152035;
+    --surface2:  #1c2d45;
+    --border:    rgba(255,255,255,0.08);
+    --border-hi: rgba(255,255,255,0.15);
+    --text:      #e8edf5;
+    --muted:     #6b7f99;
+    --subtle:    #3a5070;
+    --orange:    #f5821f;
+    --orange-hi: #ff9a3c;
+    --orange-dk: #c9670f;
+    --blue-acc:  #3b82f6;
+    --green:     #22c55e;
+    --amber:     #eab308;
+    --red:       #ef4444;
+    --radius:    10px;
+    --radius-sm: 6px;
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 0% 0%, rgba(59,130,246,0.07) 0%, transparent 55%),
+      radial-gradient(ellipse at 100% 100%, rgba(245,130,31,0.06) 0%, transparent 55%);
+    padding-bottom: 40px;
+  }
+
+  header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  header .icon {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, var(--orange-hi), var(--orange-dk) 70%);
+    flex-shrink: 0;
+    box-shadow: inset 0 0 0 6px rgba(255,255,255,0.15), inset 0 0 0 14px rgba(201,103,15,0.5);
+  }
+
+  header h1 {
+    font-family: 'Sora', sans-serif;
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+  }
+
+  header p {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 1px;
+  }
+
+  main {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 18px 16px 0;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+
+  /* ── Upload ── */
+  #uploadCard { text-align: center; }
+
+  .rock-illustration {
+    width: 84px; height: 84px; margin: 4px auto 14px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 38% 32%, rgba(255,255,255,0.55), transparent 30%),
+      conic-gradient(from 0deg, #c9670f, #fff3e0, #8a5a2b, #f5821f, #fff3e0, #c9670f);
+    box-shadow: 0 6px 22px rgba(245,130,31,0.25), inset 0 0 0 3px rgba(0,0,0,0.25);
+  }
+
+  #uploadCard h2 {
+    font-family: 'Sora', sans-serif;
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+
+  #uploadCard .hint {
+    color: var(--muted);
+    font-size: 12.5px;
+    max-width: 420px;
+    margin: 0 auto 18px;
+    line-height: 1.5;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    appearance: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 12px 18px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--orange-hi), var(--orange-dk));
+    color: #1a1005;
+  }
+
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border-hi);
+  }
+
+  .btn:active { transform: scale(0.97); }
+
+  /* ── Preview / canvas ── */
+  #previewCard { display: none; }
+
+  .canvas-wrap {
+    position: relative;
+    width: 100%;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: #000;
+    line-height: 0;
+  }
+
+  .canvas-wrap canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  #overlayCanvas {
+    position: absolute;
+    top: 0; left: 0;
+    pointer-events: none;
+  }
+
+  .analyzing-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 12.5px;
+  }
+
+  .spinner {
+    width: 15px; height: 15px;
+    border-radius: 50%;
+    border: 2px solid var(--subtle);
+    border-top-color: var(--orange-hi);
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Verdict ── */
+  .verdict {
+    display: none;
+    margin-top: 14px;
+    padding: 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-hi);
+  }
+
+  .verdict-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .verdict-sub { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+
+  .conf-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-left: auto;
+  }
+
+  .verdict.likely     { background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.35); }
+  .verdict.likely .verdict-title { color: var(--green); }
+  .verdict.likely .conf-badge { background: rgba(34,197,94,0.18); color: var(--green); }
+
+  .verdict.possible    { background: rgba(234,179,8,0.08); border-color: rgba(234,179,8,0.35); }
+  .verdict.possible .verdict-title { color: var(--amber); }
+  .verdict.possible .conf-badge { background: rgba(234,179,8,0.18); color: var(--amber); }
+
+  .verdict.unlikely   { background: rgba(239,68,68,0.07); border-color: rgba(239,68,68,0.3); }
+  .verdict.unlikely .verdict-title { color: #f87171; }
+  .verdict.unlikely .conf-badge { background: rgba(239,68,68,0.16); color: #f87171; }
+
+  /* ── Checklist ── */
+  .checklist {
+    display: none;
+    margin-top: 14px;
+    display: grid;
+    gap: 8px;
+  }
+
+  .check-item {
+    display: flex;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+
+  .check-mark {
+    flex-shrink: 0;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    margin-top: 1px;
+  }
+
+  .check-mark.yes   { background: rgba(34,197,94,0.2); color: var(--green); }
+  .check-mark.maybe { background: rgba(234,179,8,0.2); color: var(--amber); }
+  .check-mark.no    { background: rgba(239,68,68,0.18); color: #f87171; }
+
+  .check-text strong { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 1px; }
+  .check-text span { color: var(--muted); font-size: 11.5px; line-height: 1.4; }
+
+  .reset-row { margin-top: 16px; text-align: center; }
+
+  /* ── Reference / accordion ── */
+  .accordion-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+  }
+
+  .accordion-head h3 {
+    font-family: 'Sora', sans-serif;
+    font-size: 14.5px;
+  }
+
+  .chev {
+    color: var(--muted);
+    transition: transform 0.2s;
+    font-size: 12px;
+  }
+
+  .accordion.open .chev { transform: rotate(180deg); }
+
+  .accordion-body {
+    display: none;
+    margin-top: 14px;
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.6;
+  }
+
+  .accordion.open .accordion-body { display: block; }
+
+  .ref-item {
+    margin-bottom: 12px;
+  }
+
+  .ref-item strong {
+    color: var(--text);
+    display: block;
+    font-size: 12.5px;
+    margin-bottom: 2px;
+  }
+
+  .ref-item .swatches { display: inline-flex; gap: 4px; vertical-align: middle; margin-left: 4px; }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; border: 1px solid rgba(255,255,255,0.2); }
+
+  .source-link {
+    color: var(--orange-hi);
+    text-decoration: none;
+    font-size: 11.5px;
+  }
+  .source-link:hover { text-decoration: underline; }
+
+  .disclaimer {
+    color: var(--muted);
+    font-size: 11px;
+    text-align: center;
+    line-height: 1.6;
+    margin-top: 20px;
+    padding: 0 10px;
+  }
+
+  #fileInput, #cameraInput { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="icon"></div>
+  <div>
+    <h1>Lake Superior Agate ID</h1>
+    <p>Photo-based banding &amp; color heuristic</p>
+  </div>
+</header>
+
+<main>
+
+  <div class="card" id="uploadCard">
+    <div class="rock-illustration"></div>
+    <h2>Check a rock for agate banding</h2>
+    <p class="hint">Take a photo of a wet or sunlit rock, or upload one from your photo library. The app scans the image for the concentric banding, color palette, and glassy edges typical of Lake Superior agates, and circles the most likely spot.</p>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btnCamera">📷 Take Photo</button>
+      <button class="btn btn-secondary" id="btnLibrary">🖼️ Choose from Library</button>
+    </div>
+    <input type="file" id="cameraInput" accept="image/*" capture="environment">
+    <input type="file" id="fileInput" accept="image/*">
+  </div>
+
+  <div class="card" id="previewCard">
+    <div class="canvas-wrap">
+      <canvas id="renderCanvas"></canvas>
+      <canvas id="overlayCanvas"></canvas>
+    </div>
+    <div class="analyzing-bar" id="analyzingBar">
+      <div class="spinner"></div>
+      <span>Scanning for banding patterns…</span>
+    </div>
+
+    <div class="verdict" id="verdictBox">
+      <div class="verdict-title">
+        <span id="verdictIcon"></span>
+        <span id="verdictText"></span>
+        <span class="conf-badge" id="confBadge"></span>
+      </div>
+      <div class="verdict-sub" id="verdictSub"></div>
+    </div>
+
+    <div class="checklist" id="checklist"></div>
+
+    <div class="reset-row">
+      <button class="btn btn-secondary" id="btnReset">↺ Check Another Rock</button>
+    </div>
+  </div>
+
+  <div class="card accordion" id="refAccordion">
+    <div class="accordion-head" id="refHead">
+      <h3>How to tell if it's a real agate</h3>
+      <span class="chev">▾</span>
+    </div>
+    <div class="accordion-body">
+      <div class="ref-item">
+        <strong>Banding</strong>
+        Look for parallel or concentric bands that curve and wrap around each other like tree rings — straight, wavy, or eyed patterns are all common. This is the single most reliable sign of an agate.
+      </div>
+      <div class="ref-item">
+        <strong>Color palette
+          <span class="swatches">
+            <span class="swatch" style="background:#c9670f"></span>
+            <span class="swatch" style="background:#f5821f"></span>
+            <span class="swatch" style="background:#fff3e0"></span>
+            <span class="swatch" style="background:#8a5a2b"></span>
+          </span>
+        </strong>
+        Lake Superior agates are famous for red, orange, and rust bands (from iron oxide) alternating with cream, white, or gray bands. Solid gray or all-white chalcedony without banding is usually not a "keeper" agate.
+      </div>
+      <div class="ref-item">
+        <strong>Luster &amp; surface</strong>
+        Agate is a form of chalcedony (quartz), so it has a smooth, waxy-to-glassy luster and breaks with a smooth, curved (conchoidal) fracture — never a flat, dull, or crumbly surface like basalt or sandstone.
+      </div>
+      <div class="ref-item">
+        <strong>Translucency</strong>
+        Hold the rock up to sunlight or a flashlight. Real agate lets some light glow through at the thinner edges; opaque, non-banded rocks (basalt, granite) stay dark all the way through.
+      </div>
+      <div class="ref-item">
+        <strong>Hardness</strong>
+        Agate is roughly a 7 on the Mohs scale — a steel knife blade or glass edge should not scratch it. If your fingernail or a knife easily scratches the surface, it isn't agate.
+      </div>
+      <div class="ref-item">
+        <strong>Shape &amp; texture</strong>
+        Because Lake Superior agates were carried by glaciers and tumbled by waves, they're usually found as smooth, rounded pebbles or cobbles rather than sharp, freshly broken chunks.
+      </div>
+      <div class="ref-item">
+        <strong>Where to look</strong>
+        Cobble beaches, gravel bars, road cuts, and gravel pits throughout the Lake Superior watershed (Minnesota's North Shore, Wisconsin, Michigan's Upper Peninsula, and Ontario) — anywhere glacial till or lake-washed gravel is exposed.
+      </div>
+      <p style="margin-top:10px;">
+        Background reading:
+        <a class="source-link" href="https://travelironwood.com/lake-superior-hidden-gems-how-to-identify-an-agate/" target="_blank" rel="noopener">
+          Travel Ironwood — How to Identify an Agate
+        </a>
+      </p>
+    </div>
+  </div>
+
+  <p class="disclaimer">
+    This tool looks for visual patterns (banding, color, edges, translucency cues) in the photo — it isn't a trained AI rock classifier, and lighting, wet vs. dry rock, and photo quality all affect results. Treat the circle as a "look closer here" pointer, and confirm with the checks above (or a local rock club) before you decide what you've found.
+  </p>
+
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  const uploadCard   = document.getElementById('uploadCard');
+  const previewCard  = document.getElementById('previewCard');
+  const renderCanvas = document.getElementById('renderCanvas');
+  const overlayCanvas= document.getElementById('overlayCanvas');
+  const analyzingBar = document.getElementById('analyzingBar');
+  const verdictBox   = document.getElementById('verdictBox');
+  const checklistEl  = document.getElementById('checklist');
+  const fileInput    = document.getElementById('fileInput');
+  const cameraInput  = document.getElementById('cameraInput');
+
+  document.getElementById('btnCamera').addEventListener('click', () => cameraInput.click());
+  document.getElementById('btnLibrary').addEventListener('click', () => fileInput.click());
+  document.getElementById('btnReset').addEventListener('click', resetApp);
+
+  fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+  cameraInput.addEventListener('change', e => handleFile(e.target.files[0]));
+
+  document.getElementById('refHead').addEventListener('click', () => {
+    document.getElementById('refAccordion').classList.toggle('open');
+  });
+
+  function resetApp() {
+    previewCard.style.display = 'none';
+    uploadCard.style.display = 'block';
+    fileInput.value = '';
+    cameraInput.value = '';
+    verdictBox.style.display = 'none';
+    checklistEl.style.display = 'none';
+    checklistEl.innerHTML = '';
+  }
+
+  function handleFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => runPipeline(img);
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function runPipeline(img) {
+    uploadCard.style.display = 'none';
+    previewCard.style.display = 'block';
+    verdictBox.style.display = 'none';
+    checklistEl.style.display = 'none';
+    checklistEl.innerHTML = '';
+    analyzingBar.style.display = 'flex';
+
+    // ---- render canvas (what the user sees) ----
+    const MAX_RENDER = 900;
+    const scale = Math.min(1, MAX_RENDER / Math.max(img.width, img.height));
+    const rw = Math.round(img.width * scale);
+    const rh = Math.round(img.height * scale);
+    renderCanvas.width = rw;
+    renderCanvas.height = rh;
+    overlayCanvas.width = rw;
+    overlayCanvas.height = rh;
+    const rctx = renderCanvas.getContext('2d');
+    rctx.drawImage(img, 0, 0, rw, rh);
+
+    // give the browser a paint frame before the heavier analysis pass
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const result = analyzeImage(renderCanvas);
+        drawOverlay(result);
+        showResult(result);
+        analyzingBar.style.display = 'none';
+      }, 30);
+    });
+  }
+
+  // ---------------------------------------------------------------
+  // Image analysis: looks for concentric/parallel banding, an
+  // agate-like color palette, sharp band edges, and a glassy
+  // highlight — the same visual cues described in the reference
+  // panel above.
+  // ---------------------------------------------------------------
+  function analyzeImage(srcCanvas) {
+    const ANALYSIS_MAX = 240;
+    const scale = Math.min(1, ANALYSIS_MAX / Math.max(srcCanvas.width, srcCanvas.height));
+    const aw = Math.max(24, Math.round(srcCanvas.width * scale));
+    const ah = Math.max(24, Math.round(srcCanvas.height * scale));
+
+    const ac = document.createElement('canvas');
+    ac.width = aw; ac.height = ah;
+    const actx = ac.getContext('2d');
+    actx.drawImage(srcCanvas, 0, 0, aw, ah);
+    const imgData = actx.getImageData(0, 0, aw, ah);
+    const data = imgData.data;
+
+    function px(x, y) {
+      x = Math.max(0, Math.min(aw - 1, x | 0));
+      y = Math.max(0, Math.min(ah - 1, y | 0));
+      const i = (y * aw + x) * 4;
+      return [data[i], data[i + 1], data[i + 2]];
+    }
+
+    function gray(x, y) {
+      const p = px(x, y);
+      return 0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2];
+    }
+
+    // Sobel edge magnitude, precomputed once
+    const edgeMap = new Float32Array(aw * ah);
+    for (let y = 1; y < ah - 1; y++) {
+      for (let x = 1; x < aw - 1; x++) {
+        const gx =
+          -gray(x - 1, y - 1) - 2 * gray(x - 1, y) - gray(x - 1, y + 1) +
+           gray(x + 1, y - 1) + 2 * gray(x + 1, y) + gray(x + 1, y + 1);
+        const gy =
+          -gray(x - 1, y - 1) - 2 * gray(x, y - 1) - gray(x + 1, y - 1) +
+           gray(x - 1, y + 1) + 2 * gray(x, y + 1) + gray(x + 1, y + 1);
+        edgeMap[y * aw + x] = Math.sqrt(gx * gx + gy * gy);
+      }
+    }
+    function edgeAt(x, y) {
+      x = Math.max(1, Math.min(aw - 2, x | 0));
+      y = Math.max(1, Math.min(ah - 2, y | 0));
+      return edgeMap[y * aw + x];
+    }
+
+    function rgbToHsl(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h = 0, s = 0, l = (max + min) / 2;
+      const d = max - min;
+      if (d !== 0) {
+        s = d / (1 - Math.abs(2 * l - 1));
+        switch (max) {
+          case r: h = ((g - b) / d) % 6; break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h *= 60;
+        if (h < 0) h += 360;
+      }
+      return [h, s, l];
+    }
+
+    function isAgateHue(r, g, b) {
+      const [h, s, l] = rgbToHsl(r, g, b);
+      // warm reddish/orange/amber bands
+      if ((h <= 55 || h >= 340) && s > 0.18 && l > 0.15 && l < 0.85) return true;
+      // cream / white / gray translucent bands
+      if (s < 0.22 && l > 0.35) return true;
+      return false;
+    }
+
+    const minDim = Math.min(aw, ah);
+    const radii = [minDim * 0.14, minDim * 0.19, minDim * 0.25, minDim * 0.32].filter(r => r >= 10);
+    const RING_COUNT = 4;
+    const ANGLE_SAMPLES = 16;
+
+    const candidates = [];
+
+    for (const r of radii) {
+      const step = Math.max(5, Math.round(r * 0.35));
+      for (let cy = Math.round(r * 0.8); cy < ah - r * 0.8; cy += step) {
+        for (let cx = Math.round(r * 0.8); cx < aw - r * 0.8; cx += step) {
+          const score = scoreCircle(cx, cy, r);
+          if (score) candidates.push(score);
+        }
+      }
+    }
+
+    function scoreCircle(cx, cy, r) {
+      const ringMeanRGB = [];
+      const ringVar = [];
+      let paletteHits = 0;
+      let paletteTotal = 0;
+      let maxBrightness = 0;
+      let brightnessSum = 0;
+      let brightnessN = 0;
+
+      for (let ring = 1; ring <= RING_COUNT; ring++) {
+        const rad = r * (ring / RING_COUNT);
+        let sr = 0, sg = 0, sb = 0;
+        const samples = [];
+        for (let a = 0; a < ANGLE_SAMPLES; a++) {
+          const theta = (a / ANGLE_SAMPLES) * Math.PI * 2;
+          const x = cx + Math.cos(theta) * rad;
+          const y = cy + Math.sin(theta) * rad;
+          const p = px(x, y);
+          samples.push(p);
+          sr += p[0]; sg += p[1]; sb += p[2];
+          if (isAgateHue(p[0], p[1], p[2])) paletteHits++;
+          paletteTotal++;
+          const b = (p[0] + p[1] + p[2]) / 3;
+          brightnessSum += b; brightnessN++;
+          if (b > maxBrightness) maxBrightness = b;
+        }
+        const n = samples.length;
+        const mean = [sr / n, sg / n, sb / n];
+        let varSum = 0;
+        for (const p of samples) {
+          const dr = p[0] - mean[0], dg = p[1] - mean[1], db = p[2] - mean[2];
+          varSum += dr * dr + dg * dg + db * db;
+        }
+        ringMeanRGB.push(mean);
+        ringVar.push(varSum / n);
+      }
+
+      // uniformity: rings that are internally consistent (low variance) score higher
+      const avgVar = ringVar.reduce((a, b) => a + b, 0) / ringVar.length;
+      const uniformity = clamp01(1 - avgVar / 9000);
+
+      // contrast: adjacent rings should differ from one another (band transitions)
+      let contrastSum = 0;
+      let transitions = 0;
+      for (let i = 0; i < ringMeanRGB.length - 1; i++) {
+        const a = ringMeanRGB[i], b = ringMeanRGB[i + 1];
+        const dist = Math.sqrt(
+          (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2
+        );
+        contrastSum += dist;
+        if (dist > 28) transitions++;
+      }
+      const contrast = clamp01((contrastSum / (ringMeanRGB.length - 1)) / 90);
+      const transitionBonus = clamp01(transitions / 2);
+
+      // edge definition along ring boundaries
+      let edgeSum = 0, edgeN = 0;
+      for (let ring = 1; ring < RING_COUNT; ring++) {
+        const rad = r * (ring / RING_COUNT);
+        for (let a = 0; a < ANGLE_SAMPLES; a++) {
+          const theta = (a / ANGLE_SAMPLES) * Math.PI * 2;
+          const x = cx + Math.cos(theta) * rad;
+          const y = cy + Math.sin(theta) * rad;
+          edgeSum += edgeAt(x, y);
+          edgeN++;
+        }
+      }
+      const edgeScore = clamp01((edgeSum / edgeN) / 55);
+
+      const paletteScore = paletteTotal ? paletteHits / paletteTotal : 0;
+
+      const avgBrightness = brightnessSum / brightnessN;
+      const highlightScore = clamp01((maxBrightness - avgBrightness) / 120);
+
+      const total =
+        0.30 * uniformity +
+        0.22 * contrast +
+        0.10 * transitionBonus +
+        0.18 * edgeScore +
+        0.13 * paletteScore +
+        0.07 * highlightScore;
+
+      return {
+        cx, cy, r, total,
+        sub: { uniformity, contrast, transitionBonus, edgeScore, paletteScore, highlightScore }
+      };
+    }
+
+    function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+
+    candidates.sort((a, b) => b.total - a.total);
+
+    const picked = [];
+    for (const c of candidates) {
+      if (picked.length >= 2) break;
+      const overlaps = picked.some(p => {
+        const d = Math.hypot(p.cx - c.cx, p.cy - c.cy);
+        return d < (p.r + c.r) * 0.7;
+      });
+      if (!overlaps) picked.push(c);
+    }
+
+    const best = picked[0] || null;
+
+    return {
+      analysisW: aw, analysisH: ah,
+      best,
+      all: picked
+    };
+  }
+
+  function drawOverlay(result) {
+    const octx = overlayCanvas.getContext('2d');
+    octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    if (!result.best) return;
+
+    const scaleX = overlayCanvas.width / result.analysisW;
+    const scaleY = overlayCanvas.height / result.analysisH;
+
+    result.all.forEach((c, idx) => {
+      const cx = c.cx * scaleX;
+      const cy = c.cy * scaleY;
+      const r = c.r * ((scaleX + scaleY) / 2) * 1.15;
+      const isBest = idx === 0;
+      const color = c.total >= 0.62 ? '#22c55e' : c.total >= 0.45 ? '#eab308' : '#ef4444';
+
+      octx.save();
+      octx.lineWidth = isBest ? 3.5 : 2;
+      octx.strokeStyle = color;
+      octx.shadowColor = 'rgba(0,0,0,0.6)';
+      octx.shadowBlur = 6;
+      octx.globalAlpha = isBest ? 1 : 0.55;
+      octx.beginPath();
+      octx.arc(cx, cy, r, 0, Math.PI * 2);
+      octx.stroke();
+
+      if (isBest) {
+        octx.globalAlpha = 1;
+        octx.fillStyle = color;
+        octx.font = '600 12px Inter, sans-serif';
+        const label = Math.round(c.total * 100) + '%';
+        const tw = octx.measureText(label).width;
+        const lx = Math.min(overlayCanvas.width - tw - 10, Math.max(4, cx - tw / 2));
+        const ly = Math.max(16, cy - r - 8);
+        octx.fillStyle = 'rgba(0,0,0,0.65)';
+        octx.fillRect(lx - 5, ly - 13, tw + 10, 18);
+        octx.fillStyle = color;
+        octx.fillText(label, lx, ly);
+      }
+      octx.restore();
+    });
+  }
+
+  function showResult(result) {
+    verdictBox.style.display = 'block';
+    checklistEl.style.display = 'grid';
+
+    if (!result.best) {
+      verdictBox.className = 'verdict unlikely';
+      document.getElementById('verdictIcon').textContent = '✗';
+      document.getElementById('verdictText').textContent = "No clear banding found";
+      document.getElementById('confBadge').textContent = '—';
+      document.getElementById('verdictSub').textContent =
+        "Couldn't find a region with agate-like banding or color contrast. Try a closer, well-lit, in-focus photo — wetting the rock often makes bands much easier to see.";
+      checklistEl.innerHTML = '';
+      return;
+    }
+
+    const s = result.best.sub;
+    const total = result.best.total;
+
+    let tier, icon, label, sub;
+    if (total >= 0.62) {
+      tier = 'likely'; icon = '✓';
+      label = 'Likely contains an agate';
+      sub = 'The circled area shows strong concentric banding, matching colors, and sharp band edges — the classic Lake Superior agate signature. Confirm with the checks below.';
+    } else if (total >= 0.45) {
+      tier = 'possible'; icon = '~';
+      label = 'Possibly an agate — worth a closer look';
+      sub = 'The circled area has some banding or color contrast, but it isn\'t a strong match. Try wetting the rock or checking it in direct sunlight, then re-scan.';
+    } else {
+      tier = 'unlikely'; icon = '✗';
+      label = "Doesn't show strong agate characteristics";
+      sub = 'The best match found was weak — the rock may lack visible banding, or the photo may be too dark, blurry, or low-contrast to tell.';
+    }
+
+    verdictBox.className = 'verdict ' + tier;
+    document.getElementById('verdictIcon').textContent = icon;
+    document.getElementById('verdictText').textContent = label;
+    document.getElementById('confBadge').textContent = Math.round(total * 100) + '% match';
+    document.getElementById('verdictSub').textContent = sub;
+
+    const items = [
+      {
+        key: (s.uniformity + s.contrast) / 2,
+        title: 'Banding pattern',
+        yes: 'Clear parallel/concentric bands detected around the circled spot.',
+        maybe: 'Faint or partial banding — hard to be sure at this angle/lighting.',
+        no: 'No repeating band structure found in this region.'
+      },
+      {
+        key: s.paletteScore,
+        title: 'Color palette',
+        yes: 'Colors match the classic agate range (red/orange/rust with cream or white).',
+        maybe: 'Colors are a partial match — some agate tones, some not.',
+        no: "Colors don't resemble typical agate banding (may be plain rock or background)."
+      },
+      {
+        key: s.edgeScore,
+        title: 'Band edge sharpness',
+        yes: 'Crisp, well-defined edges between color zones, consistent with a glassy chalcedony surface.',
+        maybe: 'Edges are somewhat soft — could be lighting, focus, or a duller surface.',
+        no: 'No sharp transitions found — surface may be uniform, dull, or out of focus.'
+      },
+      {
+        key: s.highlightScore,
+        title: 'Glassy highlight',
+        yes: 'A bright specular highlight suggests a smooth, waxy/glassy surface (typical of agate).',
+        maybe: 'Slight highlight — inconclusive on its own.',
+        no: 'No glassy highlight detected — surface may be matte or dry.'
+      }
+    ];
+
+    checklistEl.innerHTML = items.map(it => {
+      const level = it.key >= 0.6 ? 'yes' : it.key >= 0.35 ? 'maybe' : 'no';
+      const mark = level === 'yes' ? '✓' : level === 'maybe' ? '~' : '✗';
+      const text = it[level];
+      return `<div class="check-item">
+        <div class="check-mark ${level}">${mark}</div>
+        <div class="check-text"><strong>${it.title}</strong><span>${text}</span></div>
+      </div>`;
+    }).join('');
+  }
+})();
+</script>
+</body>
+</html>
