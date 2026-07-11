@@ -1,0 +1,13 @@
+name = "agate-identifier"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Lock this down to your site's real origin once you know it, e.g.
+# "https://jgriffin187.github.io" (no trailing slash). "*" works for testing
+# but lets anyone else's page burn your Anthropic API credits.
+[vars]
+ALLOWED_ORIGIN = "*"
+
+[observability]
+enabled = true
