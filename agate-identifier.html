@@ -385,6 +385,7 @@
         <span class="conf-badge" id="confBadge"></span>
       </div>
       <div class="verdict-sub" id="verdictSub"></div>
+      <div class="verdict-sub" id="verdictLocation" style="margin-top:8px; font-style:italic;"></div>
     </div>
 
     <div class="checklist" id="checklist"></div>
@@ -540,13 +541,13 @@
       uploadReader.onload = () => {
         const dataUrl = uploadReader.result;
         const base64 = dataUrl.substring(dataUrl.indexOf(',') + 1);
-        sendToApi(base64, 'image/jpeg');
+        sendToApi(base64, 'image/jpeg', uw, uh);
       };
       uploadReader.readAsDataURL(blob);
     }, 'image/jpeg', 0.85);
   }
 
-  async function sendToApi(imageBase64, mediaType) {
+  async function sendToApi(imageBase64, mediaType, width, height) {
     if (!API_ENDPOINT || API_ENDPOINT.includes('YOUR-SUBDOMAIN')) {
       showError('This app needs its backend URL configured. See worker/README.md for deploy steps, then set API_ENDPOINT near the top of this page\'s script.');
       return;
@@ -556,7 +557,7 @@
       const res = await fetch(API_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64, mediaType })
+        body: JSON.stringify({ imageBase64, mediaType, width, height })
       });
 
       if (!res.ok) {
@@ -586,6 +587,7 @@
     document.getElementById('verdictText').textContent = 'Something went wrong';
     document.getElementById('confBadge').textContent = '—';
     document.getElementById('verdictSub').textContent = message;
+    document.getElementById('verdictLocation').style.display = 'none';
   }
 
   function drawOverlay(result) {
@@ -595,10 +597,12 @@
     const region = result.region;
     if (!region || !region.present) return;
 
-    const cx = region.center_x * overlayCanvas.width;
-    const cy = region.center_y * overlayCanvas.height;
-    const r = region.radius * Math.min(overlayCanvas.width, overlayCanvas.height);
+    const x = region.x_min * overlayCanvas.width;
+    const y = region.y_min * overlayCanvas.height;
+    const w = (region.x_max - region.x_min) * overlayCanvas.width;
+    const h = (region.y_max - region.y_min) * overlayCanvas.height;
     const color = result.verdict === 'likely' ? '#22c55e' : result.verdict === 'possible' ? '#eab308' : '#ef4444';
+    const radius = Math.min(14, w / 4, h / 4);
 
     octx.save();
     octx.lineWidth = 3.5;
@@ -606,14 +610,14 @@
     octx.shadowColor = 'rgba(0,0,0,0.6)';
     octx.shadowBlur = 6;
     octx.beginPath();
-    octx.arc(cx, cy, r, 0, Math.PI * 2);
+    octx.roundRect(x, y, w, h, Math.max(0, radius));
     octx.stroke();
 
     const label = Math.round((result.confidence || 0) * 100) + '%';
     octx.font = '600 12px Inter, sans-serif';
     const tw = octx.measureText(label).width;
-    const lx = Math.min(overlayCanvas.width - tw - 10, Math.max(4, cx - tw / 2));
-    const ly = Math.max(16, cy - r - 8);
+    const lx = Math.min(overlayCanvas.width - tw - 10, Math.max(4, x + w / 2 - tw / 2));
+    const ly = Math.max(16, y - 8);
     octx.fillStyle = 'rgba(0,0,0,0.65)';
     octx.fillRect(lx - 5, ly - 13, tw + 10, 18);
     octx.fillStyle = color;
@@ -645,6 +649,16 @@
     document.getElementById('verdictText').textContent = labels[tier];
     document.getElementById('confBadge').textContent = Math.round((result.confidence || 0) * 100) + '% confidence';
     document.getElementById('verdictSub').textContent = result.summary || '';
+
+    const locationEl = document.getElementById('verdictLocation');
+    const locationDescription = result.region && result.region.location_description;
+    if (locationDescription && result.region.present) {
+      locationEl.textContent = 'Located: ' + locationDescription;
+      locationEl.style.display = 'block';
+    } else {
+      locationEl.textContent = '';
+      locationEl.style.display = 'none';
+    }
 
     const criteria = result.criteria || {};
     checklistEl.innerHTML = Object.keys(CRITERIA_TITLES).map(key => {

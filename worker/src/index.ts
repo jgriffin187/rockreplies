@@ -33,11 +33,13 @@ const RESPONSE_SCHEMA = {
       type: "object",
       properties: {
         present: { type: "boolean" },
-        center_x: { type: "number" },
-        center_y: { type: "number" },
-        radius: { type: "number" },
+        location_description: { type: "string" },
+        x_min: { type: "number" },
+        y_min: { type: "number" },
+        x_max: { type: "number" },
+        y_max: { type: "number" },
       },
-      required: ["present", "center_x", "center_y", "radius"],
+      required: ["present", "location_description", "x_min", "y_min", "x_max", "y_max"],
       additionalProperties: false,
     },
     criteria: {
@@ -56,23 +58,37 @@ const RESPONSE_SCHEMA = {
   additionalProperties: false,
 } as const;
 
-const PROMPT = `You are an expert rockhound helping identify Lake Superior agates from photos. Lake Superior agates are banded chalcedony (a form of quartz) found in the Lake Superior watershed (Minnesota's North Shore, Wisconsin, Michigan's Upper Peninsula, Ontario). Genuine ones typically show:
+function buildPrompt(width: number | undefined, height: number | undefined): string {
+  const dimensionLine =
+    width && height
+      ? `This photo is ${width} x ${height} pixels.`
+      : `The exact pixel dimensions of this photo were not provided -- reason in fractions of the image's width and height regardless.`;
+
+  return `You are an expert rockhound helping identify Lake Superior agates from photos. Lake Superior agates are banded chalcedony (a form of quartz) found in the Lake Superior watershed (Minnesota's North Shore, Wisconsin, Michigan's Upper Peninsula, Ontario). Genuine ones typically show:
 
 1. Banding: parallel or concentric bands (straight, wavy, or "eyed") that wrap around each other like tree rings.
 2. Color palette: red, orange, or rust bands (iron oxide) alternating with cream, white, or gray bands.
 3. Translucency & luster: a smooth, waxy-to-glassy surface; thin edges may glow when backlit or wet.
 4. Shape & texture: usually a smooth, rounded pebble or cobble (glacier- and wave-tumbled), not a sharp freshly-broken chunk.
 
-Look at the attached photo of a rock. It may be sitting on dirt, gravel, sand, grass, in a hand, etc. -- ignore the background and focus only on the rock itself.
+Look at the attached photo of a rock. ${dimensionLine} It may be sitting on dirt, gravel, sand, grass, in a hand, etc. -- ignore the background and focus only on the rock itself.
 
-Determine:
+To locate the most agate-like part of the rock, work through these steps explicitly:
+1. Mentally overlay a 10x10 grid on the photo: column 0 and row 0 are the top-left corner, column 9 and row 9 are the bottom-right corner.
+2. Scan the rock's surface and identify which grid cell(s) show the strongest banding, color contrast, or glassy highlight.
+3. In location_description, describe that spot in plain words relative to the whole photo before giving any numbers (e.g. "in the upper-right quadrant of the rock, just left of center" or "along the bottom edge of the rock, slightly right of center").
+4. Convert that description into a tight bounding box around just that patch (not the whole rock): x_min/y_min is its top-left corner and x_max/y_max is its bottom-right corner, each as a fraction of the image's full width/height, where 0.0 is the left/top edge and 1.0 is the right/bottom edge.
+
+If you don't see a convincing agate region anywhere on the rock, still return your best-guess bounding box around the rock itself (or the most rock-like part of the photo), but set region.present to false.
+
+Then determine:
 - Whether the rock shows convincing agate banding and color characteristics, or is more likely a plain or different type of rock (solid-colored stone, basalt, granite, unbanded jasper, quartz, etc).
-- If there is a promising region, its approximate location as a circle: center_x and center_y as fractions of the image width/height (0.0 = left/top edge, 1.0 = right/bottom edge), and radius as a fraction of the smaller of the image's width and height. Estimate this circle to tightly bound the most agate-like patch of the rock's surface. If you don't see a convincing agate region, still provide your best-guess region with region.present set to false, centered roughly on the rock itself.
 - A one-paragraph, plain-language summary explaining your verdict for a hobbyist.
 - A rating ("yes", "maybe", or "no") plus a one-sentence explanation for each of these four criteria as observed in THIS photo: banding, color_palette, translucency_luster, shape_texture.
 - An overall confidence score from 0.0 to 1.0, and a verdict of "likely", "possible", or "unlikely".
 
 Be honest and calibrated -- most rocks people photograph are not agates, and photos are often blurry, dim, or show the rock dry (agate banding is much more visible wet or in direct sun). If the image doesn't clearly show a rock at all, set contains_agate to false, verdict to "unlikely", region.present to false, and explain why in summary.`;
+}
 
 function corsHeaders(origin: string): Record<string, string> {
   return {
@@ -92,6 +108,8 @@ function jsonResponse(data: unknown, status: number, origin: string): Response {
 interface RequestBody {
   imageBase64?: string;
   mediaType?: string;
+  width?: number;
+  height?: number;
 }
 
 export default {
@@ -113,7 +131,7 @@ export default {
       return jsonResponse({ error: "Invalid JSON body" }, 400, origin);
     }
 
-    const { imageBase64, mediaType } = body;
+    const { imageBase64, mediaType, width, height } = body;
     if (!imageBase64 || !mediaType) {
       return jsonResponse({ error: "Missing imageBase64 or mediaType" }, 400, origin);
     }
@@ -143,7 +161,7 @@ export default {
                   data: imageBase64,
                 },
               },
-              { type: "text", text: PROMPT },
+              { type: "text", text: buildPrompt(width, height) },
             ],
           },
         ],
