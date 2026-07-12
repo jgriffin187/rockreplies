@@ -1,4 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
+import {
+  DRY_AGATE_REFERENCE_BASE64,
+  DRY_AGATE_REFERENCE_CAPTION,
+  DRY_AGATE_REFERENCE_MEDIA_TYPE,
+} from "./referenceImages";
 
 export interface Env {
   ANTHROPIC_API_KEY: string;
@@ -160,6 +165,23 @@ export default {
           {
             role: "user",
             content: [
+              {
+                type: "text",
+                text: "Reference photo (for calibration only -- do not analyze or score this image itself):",
+              },
+              {
+                type: "image",
+                source: {
+                  type: "base64",
+                  media_type: DRY_AGATE_REFERENCE_MEDIA_TYPE,
+                  data: DRY_AGATE_REFERENCE_BASE64,
+                },
+              },
+              { type: "text", text: DRY_AGATE_REFERENCE_CAPTION },
+              {
+                type: "text",
+                text: "Now here is the actual rock to evaluate -- base your analysis only on this photo below:",
+              },
               {
                 type: "image",
                 source: {
