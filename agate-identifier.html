@@ -275,6 +275,50 @@
   .check-text strong { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 1px; }
   .check-text span { color: var(--muted); font-size: 11.5px; line-height: 1.4; }
 
+  /* ── Candidate blocks (one per detected rock) ── */
+  #candidatesContainer { margin-top: 14px; display: grid; gap: 14px; }
+
+  .candidate-block {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+  }
+
+  .candidate-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .candidate-dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .candidate-dot.likely   { background: #39ff6a; box-shadow: 0 0 6px rgba(57,255,106,0.7); }
+  .candidate-dot.possible { background: #39ff6a; opacity: 0.55; }
+
+  .candidate-label {
+    font-size: 12.5px;
+    font-weight: 600;
+    flex: 1;
+    line-height: 1.4;
+  }
+
+  .candidate-conf {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: rgba(57,255,106,0.16);
+    color: #39ff6a;
+    flex-shrink: 0;
+  }
+
+  .candidate-block .checklist { display: grid; gap: 8px; margin-top: 0; }
+
   .reset-row { margin-top: 16px; text-align: center; }
 
   /* ── Reference / accordion ── */
@@ -408,7 +452,7 @@
       </g>
     </svg>
     <h2>Check a rock for agate banding</h2>
-    <p class="hint">Take a photo of a wet or sunlit rock, or upload one from your photo library. Claude looks at the actual photo for the banding, color palette, and glassy edges typical of Lake Superior agates, and circles the most likely spot.</p>
+    <p class="hint">Take a photo of one rock or a whole handful, wet or dry, or upload one from your photo library. Claude looks at each rock in the photo for the banding, color palette, and glassy edges typical of Lake Superior agates, and boxes every one that looks promising.</p>
     <div class="btn-row">
       <button class="btn btn-primary" id="btnCamera">📷 Take Photo</button>
       <button class="btn btn-secondary" id="btnLibrary">🖼️ Choose from Library</button>
@@ -434,10 +478,9 @@
         <span class="conf-badge" id="confBadge"></span>
       </div>
       <div class="verdict-sub" id="verdictSub"></div>
-      <div class="verdict-sub" id="verdictLocation" style="margin-top:8px; font-style:italic;"></div>
     </div>
 
-    <div class="checklist" id="checklist"></div>
+    <div id="candidatesContainer"></div>
 
     <div class="reset-row">
       <button class="btn btn-secondary" id="btnReset">↺ Check Another Rock</button>
@@ -515,7 +558,7 @@
   const analyzingBar = document.getElementById('analyzingBar');
   const analyzingText= document.getElementById('analyzingText');
   const verdictBox   = document.getElementById('verdictBox');
-  const checklistEl  = document.getElementById('checklist');
+  const candidatesEl = document.getElementById('candidatesContainer');
   const fileInput    = document.getElementById('fileInput');
   const cameraInput  = document.getElementById('cameraInput');
 
@@ -536,8 +579,7 @@
     fileInput.value = '';
     cameraInput.value = '';
     verdictBox.style.display = 'none';
-    checklistEl.style.display = 'none';
-    checklistEl.innerHTML = '';
+    candidatesEl.innerHTML = '';
   }
 
   function handleFile(file) {
@@ -555,8 +597,7 @@
     uploadCard.style.display = 'none';
     previewCard.style.display = 'block';
     verdictBox.style.display = 'none';
-    checklistEl.style.display = 'none';
-    checklistEl.innerHTML = '';
+    candidatesEl.innerHTML = '';
     analyzingText.textContent = 'Asking Claude to look at the photo…';
     analyzingBar.style.display = 'flex';
 
@@ -629,49 +670,52 @@
   function showError(message) {
     analyzingBar.style.display = 'none';
     verdictBox.style.display = 'block';
-    checklistEl.style.display = 'none';
-    checklistEl.innerHTML = '';
+    candidatesEl.innerHTML = '';
     verdictBox.className = 'verdict unlikely';
     document.getElementById('verdictIcon').textContent = '⚠';
     document.getElementById('verdictText').textContent = 'Something went wrong';
-    document.getElementById('confBadge').textContent = '—';
+    document.getElementById('confBadge').textContent = '';
     document.getElementById('verdictSub').textContent = message;
-    document.getElementById('verdictLocation').style.display = 'none';
   }
+
+  // Bright, high-contrast green so boxes stand out against any photo
+  // background -- deliberately not the muted brand green used elsewhere.
+  const BOX_COLOR = '#39ff6a';
 
   function drawOverlay(result) {
     const octx = overlayCanvas.getContext('2d');
     octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 
-    const region = result.region;
-    if (!region || !region.present) return;
+    const candidates = result.candidates || [];
+    candidates.forEach(c => {
+      const x = c.x_min * overlayCanvas.width;
+      const y = c.y_min * overlayCanvas.height;
+      const w = (c.x_max - c.x_min) * overlayCanvas.width;
+      const h = (c.y_max - c.y_min) * overlayCanvas.height;
+      const radius = Math.min(14, w / 4, h / 4);
 
-    const x = region.x_min * overlayCanvas.width;
-    const y = region.y_min * overlayCanvas.height;
-    const w = (region.x_max - region.x_min) * overlayCanvas.width;
-    const h = (region.y_max - region.y_min) * overlayCanvas.height;
-    const color = result.verdict === 'likely' ? '#8fae5e' : result.verdict === 'possible' ? '#dba545' : '#d9694a';
-    const radius = Math.min(14, w / 4, h / 4);
+      octx.save();
+      octx.lineWidth = c.verdict === 'likely' ? 4 : 3;
+      octx.strokeStyle = BOX_COLOR;
+      octx.shadowColor = 'rgba(0,0,0,0.65)';
+      octx.shadowBlur = 6;
+      if (c.verdict === 'possible') octx.setLineDash([7, 5]);
+      octx.beginPath();
+      octx.roundRect(x, y, w, h, Math.max(0, radius));
+      octx.stroke();
+      octx.setLineDash([]);
 
-    octx.save();
-    octx.lineWidth = 3.5;
-    octx.strokeStyle = color;
-    octx.shadowColor = 'rgba(0,0,0,0.6)';
-    octx.shadowBlur = 6;
-    octx.beginPath();
-    octx.roundRect(x, y, w, h, Math.max(0, radius));
-    octx.stroke();
-
-    const label = Math.round((result.confidence || 0) * 100) + '%';
-    octx.font = '600 12px Inter, sans-serif';
-    const tw = octx.measureText(label).width;
-    const lx = Math.min(overlayCanvas.width - tw - 10, Math.max(4, x + w / 2 - tw / 2));
-    const ly = Math.max(16, y - 8);
-    octx.fillStyle = 'rgba(0,0,0,0.65)';
-    octx.fillRect(lx - 5, ly - 13, tw + 10, 18);
-    octx.fillStyle = color;
-    octx.fillText(label, lx, ly);
-    octx.restore();
+      const label = Math.round((c.confidence || 0) * 100) + '%';
+      octx.font = '600 12px Inter, sans-serif';
+      const tw = octx.measureText(label).width;
+      const lx = Math.min(overlayCanvas.width - tw - 10, Math.max(4, x + w / 2 - tw / 2));
+      const ly = Math.max(16, y - 8);
+      octx.fillStyle = 'rgba(0,0,0,0.7)';
+      octx.fillRect(lx - 5, ly - 13, tw + 10, 18);
+      octx.fillStyle = BOX_COLOR;
+      octx.fillText(label, lx, ly);
+      octx.restore();
+    });
   }
 
   const CRITERIA_TITLES = {
@@ -681,36 +725,8 @@
     shape_texture: 'Shape & texture'
   };
 
-  function showResult(result) {
-    verdictBox.style.display = 'block';
-    checklistEl.style.display = 'grid';
-
-    const tier = result.verdict === 'likely' ? 'likely' : result.verdict === 'possible' ? 'possible' : 'unlikely';
-    const icon = tier === 'likely' ? '✓' : tier === 'possible' ? '~' : '✗';
-    const labels = {
-      likely: 'Likely contains an agate',
-      possible: 'Possibly an agate — worth a closer look',
-      unlikely: "Doesn't show strong agate characteristics"
-    };
-
-    verdictBox.className = 'verdict ' + tier;
-    document.getElementById('verdictIcon').textContent = icon;
-    document.getElementById('verdictText').textContent = labels[tier];
-    document.getElementById('confBadge').textContent = Math.round((result.confidence || 0) * 100) + '% confidence';
-    document.getElementById('verdictSub').textContent = result.summary || '';
-
-    const locationEl = document.getElementById('verdictLocation');
-    const locationDescription = result.region && result.region.location_description;
-    if (locationDescription && result.region.present) {
-      locationEl.textContent = 'Located: ' + locationDescription;
-      locationEl.style.display = 'block';
-    } else {
-      locationEl.textContent = '';
-      locationEl.style.display = 'none';
-    }
-
-    const criteria = result.criteria || {};
-    checklistEl.innerHTML = Object.keys(CRITERIA_TITLES).map(key => {
+  function renderChecklist(criteria) {
+    return Object.keys(CRITERIA_TITLES).map(key => {
       const c = criteria[key] || { rating: 'no', explanation: 'No data returned for this criterion.' };
       const level = c.rating === 'yes' ? 'yes' : c.rating === 'maybe' ? 'maybe' : 'no';
       const mark = level === 'yes' ? '✓' : level === 'maybe' ? '~' : '✗';
@@ -719,6 +735,44 @@
         <div class="check-text"><strong>${CRITERIA_TITLES[key]}</strong><span>${c.explanation || ''}</span></div>
       </div>`;
     }).join('');
+  }
+
+  function showResult(result) {
+    verdictBox.style.display = 'block';
+    const candidates = result.candidates || [];
+
+    let tier, icon, label;
+    if (candidates.length === 0) {
+      tier = 'unlikely'; icon = '✗';
+      label = "No agates found in this photo";
+    } else if (candidates.some(c => c.verdict === 'likely')) {
+      tier = 'likely'; icon = '✓';
+      label = candidates.length === 1
+        ? 'Likely contains an agate'
+        : `Found ${candidates.length} likely/possible agates`;
+    } else {
+      tier = 'possible'; icon = '~';
+      label = candidates.length === 1
+        ? 'Possibly an agate — worth a closer look'
+        : `Found ${candidates.length} possible agates`;
+    }
+
+    verdictBox.className = 'verdict ' + tier;
+    document.getElementById('verdictIcon').textContent = icon;
+    document.getElementById('verdictText').textContent = label;
+    document.getElementById('confBadge').textContent = candidates.length ? `${candidates.length} found` : '';
+    document.getElementById('verdictSub').textContent = result.summary || '';
+
+    candidatesEl.innerHTML = candidates.map((c, i) => `
+      <div class="candidate-block">
+        <div class="candidate-head">
+          <span class="candidate-dot ${c.verdict}"></span>
+          <span class="candidate-label">${candidates.length > 1 ? `Rock ${i + 1}: ` : ''}${c.location_description || ''}</span>
+          <span class="candidate-conf">${Math.round((c.confidence || 0) * 100)}%</span>
+        </div>
+        <div class="checklist">${renderChecklist(c.criteria || {})}</div>
+      </div>
+    `).join('');
   }
 })();
 </script>

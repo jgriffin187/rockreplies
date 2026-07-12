@@ -27,41 +27,72 @@ function criterionSchema() {
   };
 }
 
+function criteriaGroupSchema() {
+  return {
+    type: "object",
+    properties: {
+      banding: criterionSchema(),
+      color_palette: criterionSchema(),
+      translucency_luster: criterionSchema(),
+      shape_texture: criterionSchema(),
+    },
+    required: ["banding", "color_palette", "translucency_luster", "shape_texture"],
+    additionalProperties: false,
+  };
+}
+
+// Note: there is deliberately no "confidence" or "verdict" field here -- the
+// model was defaulting to the same vibe-y confidence number (e.g. "72%") on
+// almost every photo regardless of content. Confidence is instead computed
+// server-side (see computeConfidence/computeVerdict below) from these
+// per-criterion ratings, which are grounded in what the model actually
+// describes seeing rather than a free-floating guess.
 const RESPONSE_SCHEMA = {
   type: "object",
   properties: {
-    contains_agate: { type: "boolean" },
-    confidence: { type: "number" },
-    verdict: { type: "string", enum: ["likely", "possible", "unlikely"] },
     summary: { type: "string" },
-    region: {
-      type: "object",
-      properties: {
-        present: { type: "boolean" },
-        location_description: { type: "string" },
-        x_min: { type: "number" },
-        y_min: { type: "number" },
-        x_max: { type: "number" },
-        y_max: { type: "number" },
+    candidates: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          location_description: { type: "string" },
+          x_min: { type: "number" },
+          y_min: { type: "number" },
+          x_max: { type: "number" },
+          y_max: { type: "number" },
+          criteria: criteriaGroupSchema(),
+        },
+        required: ["location_description", "x_min", "y_min", "x_max", "y_max", "criteria"],
+        additionalProperties: false,
       },
-      required: ["present", "location_description", "x_min", "y_min", "x_max", "y_max"],
-      additionalProperties: false,
-    },
-    criteria: {
-      type: "object",
-      properties: {
-        banding: criterionSchema(),
-        color_palette: criterionSchema(),
-        translucency_luster: criterionSchema(),
-        shape_texture: criterionSchema(),
-      },
-      required: ["banding", "color_palette", "translucency_luster", "shape_texture"],
-      additionalProperties: false,
     },
   },
-  required: ["contains_agate", "confidence", "verdict", "summary", "region", "criteria"],
+  required: ["summary", "candidates"],
   additionalProperties: false,
 } as const;
+
+const RATING_SCORE: Record<string, number> = { yes: 1, maybe: 0.5, no: 0 };
+const CRITERIA_KEYS = ["banding", "color_palette", "translucency_luster", "shape_texture"] as const;
+
+// Below this, a candidate isn't included in the response at all (not worth
+// circling). At or above LIKELY_THRESHOLD, it's a strong match.
+const INCLUDE_THRESHOLD = 0.375;
+const LIKELY_THRESHOLD = 0.75;
+
+interface Criterion {
+  rating: string;
+  explanation: string;
+}
+
+function computeConfidence(criteria: Record<string, Criterion>): number {
+  const total = CRITERIA_KEYS.reduce((sum, key) => sum + (RATING_SCORE[criteria[key]?.rating] ?? 0), 0);
+  return total / CRITERIA_KEYS.length;
+}
+
+function computeVerdict(confidence: number): "likely" | "possible" {
+  return confidence >= LIKELY_THRESHOLD ? "likely" : "possible";
+}
 
 function buildPrompt(width: number | undefined, height: number | undefined): string {
   const dimensionLine =
@@ -83,23 +114,20 @@ IMPORTANT -- most photos show a DRY rock, and dry agates look much subtler than 
 - Any chipped, broken, or worn-through spot on the rock -- these often reveal truer color and a glossier texture than the weathered exterior, even in an otherwise dull-looking dry rock.
 A dry agate can look almost like a plain gray or tan pebble at first glance; look closely for these subtler cues before ruling it out.
 
-Look at the attached photo of a rock. ${dimensionLine} It may be sitting on dirt, gravel, sand, grass, in a hand, etc. -- ignore the background and focus only on the rock itself.
+Look at the attached photo. ${dimensionLine} It may show ONE rock or SEVERAL rocks together (a handful, a pile, a few laid out side by side, etc). Ignore the background -- dirt, gravel, sand, grass, a hand, a table -- and evaluate only the rock(s).
 
-To locate the most agate-like part of the rock, work through these steps explicitly:
-1. Mentally overlay a 10x10 grid on the photo: column 0 and row 0 are the top-left corner, column 9 and row 9 are the bottom-right corner.
-2. Scan the rock's surface and identify which grid cell(s) show the strongest banding, color contrast, or glassy highlight.
-3. In location_description, describe that spot in plain words relative to the whole photo before giving any numbers (e.g. "in the upper-right quadrant of the rock, just left of center" or "along the bottom edge of the rock, slightly right of center").
-4. Convert that description into a tight bounding box around just that patch (not the whole rock): x_min/y_min is its top-left corner and x_max/y_max is its bottom-right corner, each as a fraction of the image's full width/height, where 0.0 is the left/top edge and 1.0 is the right/bottom edge.
+For EACH distinct rock in the photo that shows plausible agate characteristics, add one entry to \`candidates\`. Skip any rock that clearly does not -- do not add an entry for every rock in the photo, only the ones worth a closer look. If a photo has one rock, this usually means 0 or 1 entries; if it has several rocks, it can mean anywhere from 0 up to however many actually look promising.
 
-If you don't see a convincing agate region anywhere on the rock, still return your best-guess bounding box around the rock itself (or the most rock-like part of the photo), but set region.present to false.
+For each candidate rock, work through these steps explicitly:
+1. Mentally overlay a 10x10 grid on the WHOLE photo: column 0 and row 0 are the top-left corner, column 9 and row 9 are the bottom-right corner.
+2. Identify which grid cell(s) that specific rock occupies.
+3. In location_description, describe where THAT ROCK is in plain words relative to the whole photo, before giving any numbers (e.g. "the smaller reddish rock in the bottom-left of the group" or "the only rock in the photo, filling most of the frame").
+4. Give a tight bounding box around THAT ENTIRE ROCK (not just a patch of texture on it): x_min/y_min is its top-left corner and x_max/y_max is its bottom-right corner, each as a fraction of the image's full width/height, where 0.0 is the left/top edge and 1.0 is the right/bottom edge.
+5. Rate each of these four criteria for that specific rock, each "yes"/"maybe"/"no" with a one-sentence explanation grounded in what you actually see on it: banding, color_palette, translucency_luster, shape_texture.
 
-Then determine:
-- Whether the rock shows convincing agate banding and color characteristics, or is more likely a plain or different type of rock (solid-colored stone, basalt, granite, unbanded jasper, quartz, etc).
-- A one-paragraph, plain-language summary explaining your verdict for a hobbyist.
-- A rating ("yes", "maybe", or "no") plus a one-sentence explanation for each of these four criteria as observed in THIS photo: banding, color_palette, translucency_luster, shape_texture.
-- An overall confidence score from 0.0 to 1.0, and a verdict of "likely", "possible", or "unlikely".
+Also write \`summary\`: a plain-language paragraph covering the whole photo -- how many rocks you saw, how many (if any) looked promising and roughly why, or why none did.
 
-Be honest and calibrated -- most rocks people photograph are not agates, and photos are often blurry, dim, or show the rock dry (agate banding is much more visible wet or in direct sun). If the image doesn't clearly show a rock at all, set contains_agate to false, verdict to "unlikely", region.present to false, and explain why in summary.`;
+Be honest and calibrated -- most rocks people photograph are not agates, and photos are often blurry, dim, or show the rock dry (agate banding is much more visible wet or in direct sun). If nothing in the photo looks like a plausible agate, return an empty \`candidates\` array and explain why in summary.`;
 }
 
 function corsHeaders(origin: string): Record<string, string> {
@@ -203,8 +231,27 @@ export default {
         return jsonResponse({ error: "No text response from model" }, 502, origin);
       }
 
-      const result = JSON.parse(textBlock.text);
-      return jsonResponse(result, 200, origin);
+      const parsed = JSON.parse(textBlock.text) as {
+        summary: string;
+        candidates: Array<{
+          location_description: string;
+          x_min: number;
+          y_min: number;
+          x_max: number;
+          y_max: number;
+          criteria: Record<string, Criterion>;
+        }>;
+      };
+
+      const candidates = parsed.candidates
+        .map((c) => {
+          const confidence = computeConfidence(c.criteria);
+          return { ...c, confidence, verdict: computeVerdict(confidence) };
+        })
+        .filter((c) => c.confidence >= INCLUDE_THRESHOLD)
+        .sort((a, b) => b.confidence - a.confidence);
+
+      return jsonResponse({ summary: parsed.summary, candidates }, 200, origin);
     } catch (err) {
       console.error(err);
       const message = err instanceof Error ? err.message : String(err);
