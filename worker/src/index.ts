@@ -71,6 +71,13 @@ function buildPrompt(width: number | undefined, height: number | undefined): str
 3. Translucency & luster: a smooth, waxy-to-glassy surface; thin edges may glow when backlit or wet.
 4. Shape & texture: usually a smooth, rounded pebble or cobble (glacier- and wave-tumbled), not a sharp freshly-broken chunk.
 
+IMPORTANT -- most photos show a DRY rock, and dry agates look much subtler than wet ones. Do not require vivid, saturated color contrast or an obvious glassy shine before saying yes. On a dry agate, look instead for:
+- A pitted, dimpled "orange-peel" texture on the rind -- small, shallow pits covering the surface, distinct from the smooth or rough texture of ordinary dry rocks.
+- A faint waxy or soapy-looking sheen where the light catches the surface, even if the rest of the rock looks matte and dusty.
+- Muted, chalky versions of the banding colors (dusty rust, faded cream) rather than bright red/orange -- the band PATTERN (parallel or concentric lines) matters more than how saturated the colors look when dry.
+- Any chipped, broken, or worn-through spot on the rock -- these often reveal truer color and a glossier texture than the weathered exterior, even in an otherwise dull-looking dry rock.
+A dry agate can look almost like a plain gray or tan pebble at first glance; look closely for these subtler cues before ruling it out.
+
 Look at the attached photo of a rock. ${dimensionLine} It may be sitting on dirt, gravel, sand, grass, in a hand, etc. -- ignore the background and focus only on the rock itself.
 
 To locate the most agate-like part of the rock, work through these steps explicitly:
